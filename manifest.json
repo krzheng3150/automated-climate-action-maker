@@ -1,15 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Hello World Extension",
+  "name": "Automated Climate Action Maker",
   "version": "0.1.0",
-  "description": "A generic Hello World Chrome extension template.",
+  "description": "Scans web pages to suggest and automate climate-friendly alternatives and actions.",
   "permissions": [
     "storage",
     "activeTab"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Hello World"
+    "default_title": "Automated Climate Action Maker"
   },
   "background": {
     "service_worker": "background.js",

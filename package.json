@@ -1,8 +1,8 @@
 {
-  "name": "hello-world-extension",
+  "name": "automated-climate-action-maker",
   "version": "1.0.0",
   "type": "module",
-  "description": "Generic Hello World Chrome Extension",
+  "description": "Automated Climate Action Maker Chrome Extension",
   "scripts": {
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
