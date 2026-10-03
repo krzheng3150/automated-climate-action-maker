@@ -19,11 +19,28 @@ class ACAMContentScript {
   }
 
   private init(): void {
+    console.log('[ACAM] Content script initialized.');
+    this.registerMessageListeners();
     this.scenario = this.detectScenario();
     if (!this.scenario) return;
 
     console.log(`[ACAM] Target page detected for ${this.scenario}. Arming trigger...`);
     this.armTrigger(this.scenario);
+  }
+
+  private registerMessageListeners(): void {
+    chrome.runtime.onMessage.addListener(
+      (
+        message: ExtensionMessage,
+        _sender: chrome.runtime.MessageSender,
+        sendResponse: (response?: any) => void
+      ) => {
+        if (message.type === 'GET_STATUS') {
+          sendResponse({ status: 'active', url: window.location.href });
+        }
+        return true;
+      }
+    );
   }
 
   private detectScenario(): ScenarioType | null {
@@ -53,18 +70,23 @@ class ACAMContentScript {
       return 'scenario-a';
     }
 
-    // Scenario C: E-commerce shopping cart & checkout
-    const isCheckout =
+    // Scenario C: E-commerce shopping, product pages, and checkout
+    const isShopping =
       hostname.includes('amazon.') ||
       hostname.includes('ebay.') ||
       hostname.includes('walmart.') ||
       hostname.includes('target.com') ||
+      hostname.includes('bestbuy.com') ||
+      hostname.includes('apple.com') ||
+      pathname.includes('/dp/') ||
+      pathname.includes('/ip/') ||
+      pathname.includes('/product') ||
+      pathname.includes('/item') ||
       pathname.includes('/cart') ||
       pathname.includes('/checkout') ||
-      pathname.includes('/basket') ||
-      pathname.includes('/buy');
+      pathname.includes('/basket');
 
-    if (isCheckout) {
+    if (isShopping) {
       return 'scenario-c';
     }
 
@@ -96,6 +118,47 @@ class ACAMContentScript {
         }
       }, 1500);
     }
+  }
+
+  private extractProductTitle(): string {
+    const urlParams = new URLSearchParams(window.location.search);
+    const demoItem = urlParams.get('item');
+    if (demoItem) return demoItem;
+
+    // 1. Check Schema.org JSON-LD microdata
+    const ldJsonScripts = document.querySelectorAll('script[type="application/ld+json"]');
+    for (const script of ldJsonScripts) {
+      try {
+        const data = JSON.parse(script.textContent || '');
+        if (data['@type'] === 'Product' && data.name) {
+          return this.cleanProductTitle(String(data.name));
+        }
+      } catch {
+        // ignore invalid JSON-LD
+      }
+    }
+
+    // 2. Open Graph meta title fallback
+    const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+    if (ogTitle) {
+      return this.cleanProductTitle(ogTitle);
+    }
+
+    // 3. Document title fallback
+    const rawTitle = document.title ? document.title.split(/[-|:–]/)[0].trim() : '';
+    return this.cleanProductTitle(rawTitle) || 'MacBook Pro M3';
+  }
+
+  private cleanProductTitle(rawTitle: string): string {
+    return rawTitle
+      .replace(/\(.*?\)|\[.*?\]/g, '') // Remove parenthesis/brackets
+      .replace(/(with\s+.*|for\s+.*)/i, '') // Remove promotional accessories
+      .replace(/(free shipping|brand new|latest model|oem|renewed|refurbished)/gi, '')
+      .replace(/,\s*.*/, '') // Remove trailing specifications
+      .trim()
+      .split(/\s+/)
+      .slice(0, 5) // Retain brand + primary model tokens
+      .join(' ');
   }
 
   private fire(scenario: ScenarioType): void {
@@ -210,6 +273,16 @@ class ACAMContentScript {
         box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
       }
       .btn-primary:hover { background: #047857; }
+      .circular-btn {
+        background: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #10b981;
+        flex: 1;
+        text-align: center;
+        padding: 8px 6px;
+        font-size: 11px;
+      }
+      .circular-btn:hover { background: #059669; color: #ffffff; }
       .success-box {
         text-align: center;
         padding: 8px 4px;
@@ -243,16 +316,20 @@ class ACAMContentScript {
         </div>
       `;
     } else {
+      const productTitle = this.extractProductTitle();
+      const encodedTitle = encodeURIComponent(productTitle);
       card.innerHTML = `
         <div class="acam-header">
-          <span class="pill-badge passive-eco">🌱 Carbon Reduction</span>
+          <span class="pill-badge passive-eco">♻️ Compare Circular Options</span>
           <button id="close-btn" class="dismiss-btn">&times;</button>
         </div>
-        <div class="title">Consolidate Delivery & Save Fuel</div>
-        <p class="description">Consolidated 3-day grouped shipping avoids unnecessary multi-vehicle trips for this order.</p>
-        <div class="snippet-box">Estimated reduction: -1.8 kg CO₂ (equiv. to 220 phone charges)</div>
+        <div class="title">Find Refurbished Alternatives</div>
+        <p class="description">Manufacturing accounts for ~80% of electronics emissions. Compare verified second-life options to avoid high factory carbon.</p>
+        <div class="snippet-box">Target: ${productTitle} (Save up to ~65 kg CO₂e)</div>
         <div class="action-row" id="action-container">
-          <button id="action-btn" class="btn btn-primary">Auto-Optimize Shipping (-1.8 kg CO₂)</button>
+          <button class="btn circular-btn" data-name="Back Market" data-url="https://www.backmarket.com/en-us/search?q=${encodedTitle}">Back Market</button>
+          <button class="btn circular-btn" data-name="eBay Refurbished" data-url="https://www.ebay.com/sch/i.html?_nkw=${encodedTitle}&LH_ItemCondition=2000|2500">eBay Refurbished</button>
+          <button class="btn circular-btn" data-name="Swappa" data-url="https://swappa.com/search?q=${encodedTitle}">Swappa</button>
         </div>
       `;
     }
@@ -265,58 +342,75 @@ class ACAMContentScript {
       this.removePrompt();
     });
 
-    card.querySelector('#action-btn')?.addEventListener('click', () => {
-      this.executeAction(scenario, card);
-    });
+    if (scenario === 'scenario-a') {
+      card.querySelector('#action-btn')?.addEventListener('click', () => {
+        this.executeCivicAction(card);
+      });
+    } else {
+      card.querySelectorAll<HTMLButtonElement>('.circular-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const url = btn.dataset.url || '';
+          const name = btn.dataset.name || 'Refurbished';
+          this.executeCircularRedirect(url, name, card);
+        });
+      });
+    }
   }
 
-  private executeAction(scenario: ScenarioType, card: HTMLElement): void {
+  private executeCivicAction(card: HTMLElement): void {
     const actionContainer = card.querySelector('#action-container');
     if (!actionContainer) return;
 
-    if (scenario === 'scenario-a') {
-      chrome.runtime.sendMessage(
-        {
-          type: 'RECORD_ACTION',
-          payload: {
-            actionId: 'civic_petition_sent',
-            label: 'Civic Representative Letter',
-            co2SavedKg: 0,
-            points: 50,
-          },
+    chrome.runtime.sendMessage(
+      {
+        type: 'RECORD_ACTION',
+        payload: {
+          actionId: 'civic_petition_sent',
+          label: 'Civic Representative Letter',
+          co2SavedKg: 0,
+          points: 50,
         },
-        () => {
-          actionContainer.innerHTML = `
-            <div class="success-box">
-              <div class="success-title">✓ Civic Comment Submitted!</div>
-              <div class="success-sub">+50 points earned | Letter queued to rep's office</div>
-            </div>
-          `;
-          setTimeout(() => this.removePrompt(), 2500);
-        }
-      );
-    } else {
-      chrome.runtime.sendMessage(
-        {
-          type: 'RECORD_ACTION',
-          payload: {
-            actionId: 'consolidated_shipping',
-            label: 'Consolidated Eco Shipping',
-            co2SavedKg: 1.8,
-            points: 20,
-          },
-        },
-        () => {
-          actionContainer.innerHTML = `
-            <div class="success-box">
-              <div class="success-title">✓ Shipping Optimized!</div>
-              <div class="success-sub">-1.8 kg CO₂ avoided on this delivery</div>
-            </div>
-          `;
-          setTimeout(() => this.removePrompt(), 2500);
-        }
-      );
+      },
+      () => {
+        actionContainer.innerHTML = `
+          <div class="success-box">
+            <div class="success-title">✓ Civic Comment Submitted!</div>
+            <div class="success-sub">+50 points earned | Letter queued to rep's office</div>
+          </div>
+        `;
+        setTimeout(() => this.removePrompt(), 2500);
+      }
+    );
+  }
+
+  private executeCircularRedirect(targetUrl: string, provider: string, card: HTMLElement): void {
+    const actionContainer = card.querySelector('#action-container');
+    if (!actionContainer) return;
+
+    if (targetUrl) {
+      window.open(targetUrl, '_blank');
     }
+
+    chrome.runtime.sendMessage(
+      {
+        type: 'RECORD_ACTION',
+        payload: {
+          actionId: 'circular_marketplace_search',
+          label: `${provider} Search`,
+          co2SavedKg: 65,
+          points: 80,
+        },
+      },
+      () => {
+        actionContainer.innerHTML = `
+          <div class="success-box">
+            <div class="success-title">✓ ${provider} Opened!</div>
+            <div class="success-sub">+80 pts | Up to ~65 kg embodied CO₂ saved</div>
+          </div>
+        `;
+        setTimeout(() => this.removePrompt(), 2500);
+      }
+    );
   }
 
   private removePrompt(): void {
