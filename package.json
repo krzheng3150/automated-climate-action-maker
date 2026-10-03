@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
+    "launch": "node launch.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

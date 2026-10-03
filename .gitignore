@@ -3,3 +3,5 @@ dist/
 *.zip
 .cache/
 .DS_Store
+screenshots/
+*.png
