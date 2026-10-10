@@ -3,6 +3,8 @@
 import type { HistoryScanResult, StreamStep } from './index';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const permissionCard = document.getElementById('permission-card') as HTMLElement | null;
+  const grantBtn = document.getElementById('grant-btn') as HTMLButtonElement | null;
   const scanBtn = document.getElementById('scan-btn') as HTMLButtonElement | null;
   const btnText = document.getElementById('btn-text') as HTMLElement | null;
   const pulseDot = document.getElementById('pulse-dot') as HTMLElement | null;
@@ -17,6 +19,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const domainsListEl = document.getElementById('domains-list') as HTMLElement | null;
   const lastUpdatedEl = document.getElementById('last-updated') as HTMLElement | null;
   const purgeBtn = document.getElementById('purge-btn') as HTMLButtonElement | null;
+
+  async function checkPermissions(): Promise<boolean> {
+    const hasPermission = await chrome.permissions.contains({ permissions: ['history'] });
+    if (hasPermission) {
+      if (permissionCard) permissionCard.style.display = 'none';
+      if (scanBtn) scanBtn.disabled = false;
+    } else {
+      if (permissionCard) permissionCard.style.display = 'flex';
+      if (scanBtn) scanBtn.disabled = true;
+      if (stepTitle) stepTitle.textContent = 'Permission Required';
+      if (stepDetail) {
+        stepDetail.textContent = 'Grant local history permission to enable on-device analysis.';
+      }
+    }
+    return hasPermission;
+  }
 
   function renderResults(result: HistoryScanResult): void {
     if (googleCountEl) googleCountEl.textContent = result.googleCount.toLocaleString();
@@ -72,8 +90,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function startTraceStream(): void {
+  async function startTraceStream(): Promise<void> {
     if (!scanBtn) return;
+
+    const hasPermission = await checkPermissions();
+    if (!hasPermission) {
+      const granted = await chrome.permissions.request({ permissions: ['history'] });
+      if (!granted) return;
+      await checkPermissions();
+    }
 
     scanBtn.disabled = true;
     if (btnText) btnText.textContent = 'Computing On-Device...';
@@ -112,6 +137,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  grantBtn?.addEventListener('click', async () => {
+    const granted = await chrome.permissions.request({ permissions: ['history'] });
+    if (granted) {
+      await checkPermissions();
+      await startTraceStream();
+    }
+  });
+
   scanBtn?.addEventListener('click', startTraceStream);
 
   purgeBtn?.addEventListener('click', async () => {
@@ -131,5 +164,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  await checkPermissions();
   await loadCachedScan();
 });

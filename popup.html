@@ -19,7 +19,18 @@
         <span class="badge">100% On-Device</span>
       </header>
 
-      <section class="card action-card">
+      <section class="card permission-card" id="permission-card" style="display: none;">
+        <div class="permission-header">
+          <span class="permission-icon">🛡️</span>
+          <div>
+            <div class="permission-title">Enable Local History Access</div>
+            <p class="permission-desc">To analyze your digital footprint on-device with 0 network calls, ACAM requires local history permission.</p>
+          </div>
+        </div>
+        <button id="grant-btn" class="primary-btn btn-grant">Grant Local Access</button>
+      </section>
+
+      <section class="card action-card" id="action-card">
         <button id="scan-btn" class="primary-btn">
           <span id="btn-text">Run On-Device Analysis</span>
         </button>

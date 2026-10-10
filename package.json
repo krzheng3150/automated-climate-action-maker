@@ -10,6 +10,8 @@
     "test": "npm run check:guardrails",
     "test:stream": "npm run build && node test-history-stream.mjs",
     "test:e2e": "npm run build && node test-e2e-all.mjs",
+    "pack:store": "node pack-store.mjs",
+    "generate:icons": "node generate-icons.mjs",
     "check:static": "node check-static.mjs",
     "check:runtime": "npm run build && node test-runtime-guardrails.mjs",
     "check:guardrails": "npm run typecheck && npm run check:static && npm run check:runtime",

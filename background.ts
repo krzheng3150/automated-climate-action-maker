@@ -73,6 +73,18 @@ chrome.runtime.onConnect.addListener((port) => {
     const maxResults = msg.maxResults ?? DEFAULT_SCAN_CONFIG.maxResults;
 
     try {
+      const hasHistory = await chrome.permissions.contains({ permissions: ['history'] });
+      if (!hasHistory) {
+        port.postMessage({
+          step: -1,
+          title: 'Permission Required',
+          detail: 'Local history permission is not granted. Please click "Grant Local Access" in the popup.',
+          progress: 0,
+          error: 'PERMISSION_NOT_GRANTED',
+        } satisfies StreamStep);
+        return;
+      }
+
       // STEP 1: Storage / DB initialization
       port.postMessage({
         step: 1,

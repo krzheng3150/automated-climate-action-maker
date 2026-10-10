@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,7 +33,21 @@ try {
     reportPass('Manifest V3 Compliance');
   }
 
-  // Host permissions egress check
+  // Store Compliance: Permission Minimization & Scope Check
+  const allowedPermissions = ['storage', 'activeTab', 'history'];
+  const permissions = manifest.permissions || [];
+  const excessPermissions = permissions.filter((p) => !allowedPermissions.includes(p));
+  if (excessPermissions.length > 0) {
+    reportFailure(
+      'Permissions Minimization',
+      'manifest.json',
+      `Unexpected or excessive permissions detected: ${JSON.stringify(excessPermissions)}. Must strictly be ${JSON.stringify(allowedPermissions)}.`
+    );
+  } else {
+    reportPass('Permissions Minimization: Limited to core single-purpose set (storage, activeTab, history)');
+  }
+
+  // Zero Outbound Host Permissions / Network Egress check
   if (manifest.host_permissions) {
     const wildcards = ['<all_urls>', '*://*/*', 'https://*/*', 'http://*/*'];
     const hasWildcard = manifest.host_permissions.some((p) => wildcards.includes(p));
@@ -48,6 +62,35 @@ try {
     }
   } else {
     reportPass('Zero Outbound Host Permissions Declared');
+  }
+
+  // CSP lockdown check
+  const csp = manifest.content_security_policy?.extension_pages;
+  if (!csp || !csp.includes("script-src 'self'")) {
+    reportFailure('Content Security Policy', 'manifest.json', "Must explicitly restrict script-src to 'self'");
+  } else {
+    reportPass("Strict CSP: extension_pages locked to 'self'");
+  }
+
+  // Icons completeness check
+  const icons = manifest.icons || {};
+  const requiredSizes = ['16', '32', '48', '128'];
+  let missingIcons = 0;
+  for (const s of requiredSizes) {
+    const iconRel = icons[s];
+    if (!iconRel) {
+      reportFailure('Store Asset Completeness', 'manifest.json', `Missing icon size ${s} in manifest.icons`);
+      missingIcons++;
+    } else {
+      const fullPath = path.join(projectRoot, iconRel);
+      if (!existsSync(fullPath)) {
+        reportFailure('Store Asset Completeness', iconRel, `Icon file does not exist on disk: ${fullPath}`);
+        missingIcons++;
+      }
+    }
+  }
+  if (missingIcons === 0) {
+    reportPass('Store Asset Completeness: All 4 standard icons (16, 32, 48, 128) verified');
   }
 } catch (err) {
   reportFailure('Manifest Parse', 'manifest.json', err.message);

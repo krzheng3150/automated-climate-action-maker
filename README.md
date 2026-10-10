@@ -23,6 +23,8 @@ automated-climate-action-maker/
 ├── test-runtime-guardrails.mjs # Headless Puppeteer network firewall & isolation test
 ├── test-history-stream.mjs   # Headless Puppeteer stream verification suite
 ├── test-e2e-all.mjs          # Full end-to-end multi-scenario subsystem test
+├── generate-icons.mjs        # Standard icon generator (16, 32, 48, 128 PNG)
+├── pack-store.mjs            # Production packager for Chrome Web Store upload
 └── launch.mjs                # Interactive launcher script
 ```
 
@@ -66,7 +68,13 @@ Tests all subsystems end-to-end: Scenario A civic actions, Scenario C circular r
 npm run test:e2e
 ```
 
-### 6. Load into Chrome
+### 6. Package for Chrome Web Store
+Runs all guardrails and packages a clean, store-ready ZIP archive without sourcemaps:
+```bash
+npm run pack:store
+```
+
+### 7. Load into Chrome
 1. Open Chrome and navigate to `chrome://extensions/`.
 2. Enable **Developer mode** in the top-right corner.
 3. Click **Load unpacked** and select the `dist/` directory inside this repository.

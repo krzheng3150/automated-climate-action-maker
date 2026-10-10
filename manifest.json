@@ -2,15 +2,30 @@
   "manifest_version": 3,
   "name": "Automated Climate Action Maker",
   "version": "0.1.0",
-  "description": "Scans web pages to suggest and automate climate-friendly alternatives and actions.",
+  "description": "Scans browsing footprints on-device to suggest and automate climate-positive decisions with zero network telemetry.",
   "permissions": [
     "storage",
     "activeTab",
     "history"
   ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Automated Climate Action Maker"
+    "default_title": "Automated Climate Action Maker",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
   },
   "background": {
     "service_worker": "background.js",

@@ -13,6 +13,15 @@ function copyStaticFiles() {
       copyFileSync(file, `dist/${file}`);
     }
   }
+  if (existsSync('icons')) {
+    mkdirSync('dist/icons', { recursive: true });
+    for (const size of [16, 32, 48, 128]) {
+      const icon = `icons/icon-${size}.png`;
+      if (existsSync(icon)) {
+        copyFileSync(icon, `dist/${icon}`);
+      }
+    }
+  }
 }
 
 /** @type {import('esbuild').BuildOptions} */
