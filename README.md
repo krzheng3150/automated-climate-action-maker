@@ -19,7 +19,9 @@ automated-climate-action-maker/
 ├── background.ts             # Service worker compute engine and trace stream emitter
 ├── content.ts                # Content script with DOM scanner and Shadow DOM overlays
 ├── index.ts                  # Shared data schemas, types, and default scan configurations
-├── test-history-stream.mjs   # Headless Puppeteer verification suite
+├── check-static.mjs          # Static AST code & manifest guardrails linter
+├── test-runtime-guardrails.mjs # Headless Puppeteer network firewall & isolation test
+├── test-history-stream.mjs   # Headless Puppeteer stream verification suite
 └── launch.mjs                # Interactive launcher script
 ```
 
@@ -49,7 +51,15 @@ Verify the background history ingestion, live streaming progress bar, domain agg
 npm run test:stream
 ```
 
-### 4. Load into Chrome
+### 4. Run Developer Guardrails Suite
+Run static AST audits and headless Puppeteer network firewall assertions to ensure zero outbound telemetry, anti-eval security, and Shadow DOM encapsulation:
+```bash
+npm run check:guardrails
+# or simply:
+npm test
+```
+
+### 5. Load into Chrome
 1. Open Chrome and navigate to `chrome://extensions/`.
 2. Enable **Developer mode** in the top-right corner.
 3. Click **Load unpacked** and select the `dist/` directory inside this repository.
