@@ -1,10 +1,17 @@
 /// <reference types="chrome" />
 
-import type { ExtensionMessage, HelloStats } from './index';
+import {
+  DEFAULT_SCAN_CONFIG,
+  type DomainFrequency,
+  type ExtensionMessage,
+  type HelloStats,
+  type HistoryScanResult,
+  type StreamStep,
+} from './index';
 
 /**
  * Automated Climate Action Maker (ACAM) - Background Service Worker
- * Manages climate impact state persistence and message handling.
+ * Manages privacy-preserving on-device browsing analysis, trace streaming, and impact state.
  */
 
 export interface ACAMStats extends HelloStats {
@@ -28,13 +35,155 @@ chrome.runtime.onInstalled.addListener(async () => {
     actionsCount: 0,
   };
 
-  const stored = await chrome.storage.local.get('stats');
-  await chrome.storage.local.set({ stats: { ...initialStats, ...(stored['stats'] || {}) } });
-  console.log('[ACAM] Extension installed and impact storage initialized.');
+  const stored = await chrome.storage.local.get(['stats', 'lastHistoryScan']);
+  if (!stored['stats']) {
+    await chrome.storage.local.set({ stats: initialStats });
+  }
+  console.log('[ACAM] Service worker installed and storage initialized.');
 });
 
+// Helper for smooth, observable streaming steps
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isGoogleDomain(hostname: string): boolean {
+  const cleanHost = hostname.toLowerCase();
+  return (
+    cleanHost === 'google.com' ||
+    cleanHost.endsWith('.google.com') ||
+    cleanHost === 'youtube.com' ||
+    cleanHost.endsWith('.youtube.com') ||
+    cleanHost === 'gmail.com' ||
+    cleanHost.endsWith('.gmail.com') ||
+    cleanHost.endsWith('.googlevideo.com') ||
+    cleanHost.endsWith('.gstatic.com') ||
+    cleanHost.endsWith('.googleusercontent.com')
+  );
+}
+
+// Trace streaming port listener for foreground UI
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'acam-trace-stream') return;
+
+  port.onMessage.addListener(async (msg: { action: string; timeframeDays?: number; maxResults?: number }) => {
+    if (msg.action !== 'start') return;
+
+    const timeframeDays = msg.timeframeDays ?? DEFAULT_SCAN_CONFIG.timeframeDays;
+    const maxResults = msg.maxResults ?? DEFAULT_SCAN_CONFIG.maxResults;
+
+    try {
+      // STEP 1: Storage / DB initialization
+      port.postMessage({
+        step: 1,
+        title: 'Accessing Local Storage',
+        detail: 'Connecting to Chromium on-device history SQLite database (0 network traffic)...',
+        progress: 15,
+      } satisfies StreamStep);
+
+      await delay(250);
+
+      const startTime = Date.now() - timeframeDays * 24 * 60 * 60 * 1000;
+
+      // STEP 2: Query history items into memory
+      port.postMessage({
+        step: 2,
+        title: 'Memory Ingestion',
+        detail: `Querying history from the past ${timeframeDays} days (capped at ${maxResults} records)...`,
+        progress: 40,
+      } satisfies StreamStep);
+
+      const historyItems = await chrome.history.search({
+        text: '',
+        startTime,
+        maxResults,
+      });
+
+      await delay(300);
+
+      port.postMessage({
+        step: 2,
+        title: 'Memory Ingestion',
+        detail: `Loaded ${historyItems.length} records into local RAM. Initiating regex & hostname evaluation...`,
+        progress: 55,
+      } satisfies StreamStep);
+
+      await delay(250);
+
+      // STEP 3: Domain Classification
+      let googleCount = 0;
+      let nonGoogleCount = 0;
+      const domainMap: Record<string, number> = {};
+
+      for (const item of historyItems) {
+        if (!item.url) continue;
+        try {
+          const parsed = new URL(item.url);
+          const hostname = parsed.hostname.toLowerCase();
+          if (!hostname) continue;
+
+          domainMap[hostname] = (domainMap[hostname] || 0) + (item.visitCount || 1);
+
+          if (isGoogleDomain(hostname)) {
+            googleCount++;
+          } else {
+            nonGoogleCount++;
+          }
+        } catch {
+          // Ignore unparseable or internal pseudo-URLs (e.g. chrome://)
+        }
+      }
+
+      const topDomains: DomainFrequency[] = Object.entries(domainMap)
+        .map(([domain, count]) => ({ domain, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
+
+      port.postMessage({
+        step: 3,
+        title: 'Domain Classification',
+        detail: `Evaluated ${historyItems.length} items: ${googleCount} Google vs ${nonGoogleCount} non-Google across ${Object.keys(domainMap).length} distinct hostnames.`,
+        progress: 80,
+      } satisfies StreamStep);
+
+      await delay(300);
+
+      // STEP 4: Store results locally and dispatch completion
+      const result: HistoryScanResult = {
+        googleCount,
+        nonGoogleCount,
+        total: googleCount + nonGoogleCount,
+        topDomains,
+        timestamp: Date.now(),
+        timeframeDays,
+      };
+
+      await chrome.storage.local.set({ lastHistoryScan: result });
+
+      port.postMessage({
+        step: 4,
+        title: 'Computation Complete',
+        detail: 'Analysis stored in local storage sandbox. Zero data transmitted externally.',
+        progress: 100,
+        done: true,
+        payload: result,
+      } satisfies StreamStep);
+    } catch (err) {
+      console.error('[ACAM] History stream failed:', err);
+      port.postMessage({
+        step: -1,
+        title: 'Analysis Error',
+        detail: err instanceof Error ? err.message : 'Unknown execution error',
+        progress: 100,
+        error: String(err),
+      } satisfies StreamStep);
+    }
+  });
+});
+
+// Regular runtime message dispatcher for content script interventions and stats
 chrome.runtime.onMessage.addListener(
-  ( 
+  (
     message: ExtensionMessage,
     _sender: chrome.runtime.MessageSender,
     sendResponse: (response?: any) => void
@@ -43,9 +192,9 @@ chrome.runtime.onMessage.addListener(
       handleGreeting().then((updatedStats) => {
         sendResponse({ success: true, message: 'Hello, World!', stats: updatedStats });
       });
-      return true; // Keep message channel open for async response
+      return true;
     }
-    
+
     const msg = message as any;
 
     if (msg.type === 'RECORD_ACTION') {
@@ -56,10 +205,11 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === 'GET_STATUS') {
-      chrome.storage.local.get('stats').then((data) => {
+      chrome.storage.local.get(['stats', 'lastHistoryScan']).then((data) => {
         sendResponse({
           status: 'active',
           stats: data['stats'] || { greetingCount: 0, totalCo2SavedKg: 0, civicPoints: 0, actionsCount: 0 },
+          lastHistoryScan: data['lastHistoryScan'] || null,
         });
       });
       return true;
@@ -84,7 +234,6 @@ async function recordClimateAction(payload: RecordActionPayload): Promise<ACAMSt
   stats.greetingCount += 1;
 
   await chrome.storage.local.set({ stats });
-  console.log(`[ACAM] Action logged: ${payload.label}`, stats);
   return stats;
 }
 

@@ -1,23 +1,26 @@
-# automated-climate-action-maker
+# automated-climate-action-maker (ACAM)
 
-A TypeScript-based Web Browser Extension (Manifest V3) that scans web pages, detects carbon-intensive options (e.g., expedited shipping, travel routes), and nudges or automates climate-positive decisions.
+A TypeScript-based Web Browser Extension (Manifest V3) that demonstrates a **100% On-Device, Privacy-First Architecture** for climate action and behavioral insights:
+- **On-Device History Pipeline**: Reads Chromium history on-device, aggregates Google vs. non-Google visits, and discovers domain frequencies without sending any data off the local machine.
+- **Live Compute Stream**: Streams background compute steps to the foreground popup in real time across a persistent messaging port.
+- **Contextual Interventions**: Injects non-intrusive circular shopping alternatives and civic actions on supported news and e-commerce websites.
 
 ## Project Structure
 
 ```
 automated-climate-action-maker/
-├── build.js              # esbuild compilation script (IIFE for content, ESM for background)
-├── package.json          # Project metadata and dependencies
-├── tsconfig.json         # TypeScript strict configuration
-├── public/
-│   ├── manifest.json     # Chrome / Web Extension Manifest V3
-│   ├── popup.html        # Extension popup toolbar view
-│   └── popup.css         # Popup styles
-└── src/
-    ├── types/            # Shared TypeScript data models and message schemas
-    ├── background/       # Service worker handling storage and telemetry
-    ├── content/          # Content script with DOM scanner and isolated Shadow DOM UI
-    └── popup/            # Extension popup logic
+├── build.mjs                 # esbuild bundling pipeline (MV3 ESM service worker + IIFE scripts)
+├── package.json              # Project dependencies and test scripts
+├── tsconfig.json             # TypeScript strict configuration
+├── manifest.json             # Extension manifest (storage, activeTab, history)
+├── popup.html                # Non-terminal visual stream UI
+├── popup.css                 # Popup styles (progress bar, pulsing stream dot, domain lists)
+├── popup.ts                  # Foreground UI controller and stream event listener
+├── background.ts             # Service worker compute engine and trace stream emitter
+├── content.ts                # Content script with DOM scanner and Shadow DOM overlays
+├── index.ts                  # Shared data schemas, types, and default scan configurations
+├── test-history-stream.mjs   # Headless Puppeteer verification suite
+└── launch.mjs                # Interactive launcher script
 ```
 
 ## Getting Started
@@ -38,10 +41,16 @@ npm run watch
 # Type check without emitting
 npm run typecheck
 ```
-
 The compiled extension files are output to `dist/`.
 
-### 3. Load into Browser
-1. Open Chrome or any Chromium-based browser and navigate to `chrome://extensions/`.
+### 3. Run Automated Stream Verification Test
+Verify the background history ingestion, live streaming progress bar, domain aggregation, and cache purging headlessly via Puppeteer:
+```bash
+npm run test:stream
+```
+
+### 4. Load into Chrome
+1. Open Chrome and navigate to `chrome://extensions/`.
 2. Enable **Developer mode** in the top-right corner.
 3. Click **Load unpacked** and select the `dist/` directory inside this repository.
+4. Click the ACAM icon in your browser toolbar and hit **"Run On-Device Analysis"** to observe the live compute stream and raw domain frequency breakdown.

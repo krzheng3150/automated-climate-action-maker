@@ -349,8 +349,8 @@ class ACAMContentScript {
     } else {
       card.querySelectorAll<HTMLButtonElement>('.circular-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-          const url = btn.dataset.url || '';
-          const name = btn.dataset.name || 'Refurbished';
+          const url = btn.dataset['url'] || '';
+          const name = btn.dataset['name'] || 'Refurbished';
           this.executeCircularRedirect(url, name, card);
         });
       });

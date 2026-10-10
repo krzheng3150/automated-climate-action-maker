@@ -3,31 +3,76 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hello World Extension</title>
+    <title>ACAM - On-Device History Stream</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <div class="container">
       <header>
-        <span class="icon">👋</span>
-        <h2>Hello World</h2>
+        <div class="brand">
+          <span class="logo-icon">🌿</span>
+          <div class="brand-text">
+            <h2>ACAM</h2>
+            <span class="sub-brand">Climate Action Intelligence</span>
+          </div>
+        </div>
+        <span class="badge">100% On-Device</span>
       </header>
 
-      <section class="card">
-        <div class="stat-group">
-          <span class="stat-label">Greetings Sent</span>
-          <span id="greeting-count" class="stat-value">0</span>
+      <section class="card action-card">
+        <button id="scan-btn" class="primary-btn">
+          <span id="btn-text">Run On-Device Analysis</span>
+        </button>
+
+        <div class="stream-panel">
+          <div class="progress-bar-container">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+
+          <div class="step-status">
+            <div class="step-header">
+              <span id="pulse-dot" class="pulse-dot"></span>
+              <span id="step-title" class="step-title">Engine Ready</span>
+            </div>
+            <p id="step-detail" class="step-detail">Click to trigger on-device history classification across local SQLite records.</p>
+          </div>
         </div>
-        <div class="stat-group">
-          <span class="stat-label">Status</span>
-          <span id="status-message" class="stat-value">Active</span>
+      </section>
+
+      <section class="card metrics-card">
+        <h3 class="section-title">Browsing Footprint</h3>
+        <div class="stats-grid">
+          <div class="stat-box google-box">
+            <span class="stat-label">Google Hits</span>
+            <span id="google-count" class="stat-value">0</span>
+          </div>
+          <div class="stat-box non-google-box">
+            <span class="stat-label">Non-Google</span>
+            <span id="non-google-count" class="stat-value">0</span>
+          </div>
+          <div class="stat-box total-box">
+            <span class="stat-label">Total Evaluated</span>
+            <span id="total-count" class="stat-value">0</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card raw-data-card" id="raw-data-section">
+        <div class="raw-data-header">
+          <h3 class="section-title">What ACAM Sees (Raw Sample)</h3>
+          <span id="last-updated" class="timestamp-label">Not scanned yet</span>
+        </div>
+        <div id="domains-list" class="domains-list">
+          <div class="empty-state">Run analysis to inspect on-device domain frequency.</div>
         </div>
       </section>
 
       <footer>
-        <button id="reset-btn">Reset Stats</button>
+        <button id="purge-btn" class="link-btn text-danger">Purge Local Cache</button>
+        <div class="privacy-note">🔒 Zero outbound network requests. All computations occur within local browser memory.</div>
       </footer>
     </div>
+
     <script src="popup.js"></script>
   </body>
 </html>

@@ -5,7 +5,8 @@
   "description": "Scans web pages to suggest and automate climate-friendly alternatives and actions.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "history"
   ],
   "action": {
     "default_popup": "popup.html",
