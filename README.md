@@ -22,6 +22,7 @@ automated-climate-action-maker/
 ├── check-static.mjs          # Static AST code & manifest guardrails linter
 ├── test-runtime-guardrails.mjs # Headless Puppeteer network firewall & isolation test
 ├── test-history-stream.mjs   # Headless Puppeteer stream verification suite
+├── test-e2e-all.mjs          # Full end-to-end multi-scenario subsystem test
 └── launch.mjs                # Interactive launcher script
 ```
 
@@ -59,7 +60,13 @@ npm run check:guardrails
 npm test
 ```
 
-### 5. Load into Chrome
+### 5. Run Full End-to-End Regression Suite
+Tests all subsystems end-to-end: Scenario A civic actions, Scenario C circular redirects, background messaging, and persistent storage points:
+```bash
+npm run test:e2e
+```
+
+### 6. Load into Chrome
 1. Open Chrome and navigate to `chrome://extensions/`.
 2. Enable **Developer mode** in the top-right corner.
 3. Click **Load unpacked** and select the `dist/` directory inside this repository.

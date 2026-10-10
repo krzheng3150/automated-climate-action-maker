@@ -76,6 +76,7 @@ const forbiddenEvalPatterns = [
 let networkViolations = 0;
 let evalViolations = 0;
 let timerViolations = 0;
+let domSafetyViolations = 0;
 
 for (const filePath of tsFiles) {
   const content = readFileSync(filePath, 'utf8');
@@ -99,6 +100,16 @@ for (const filePath of tsFiles) {
     }
   }
 
+  // Check unsafe innerHTML assignments (Anti-XSS)
+  if (/\.innerHTML\s*=/.test(content)) {
+    reportFailure(
+      'Anti-XSS DOM Safety',
+      relPath,
+      'Direct assignment to .innerHTML is forbidden. Use document.createElement, textContent, or replaceChildren instead.'
+    );
+    domSafetyViolations++;
+  }
+
   // Check timers in background service worker
   if (relPath.includes('background.ts')) {
     if (/\bsetInterval\s*\(/.test(content)) {
@@ -118,6 +129,10 @@ if (networkViolations === 0) {
 
 if (evalViolations === 0) {
   reportPass('Anti-Eval Security: No dynamic execution primitives detected in source code');
+}
+
+if (domSafetyViolations === 0) {
+  reportPass('Anti-XSS DOM Safety: No unsafe innerHTML assignments detected in source code');
 }
 
 if (timerViolations === 0) {

@@ -30,20 +30,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (domainsListEl) {
       if (!result.topDomains || result.topDomains.length === 0) {
-        domainsListEl.innerHTML = '<div class="empty-state">No history visits detected in specified period.</div>';
+        const emptyEl = document.createElement('div');
+        emptyEl.className = 'empty-state';
+        emptyEl.textContent = 'No history visits detected in specified period.';
+        domainsListEl.replaceChildren(emptyEl);
         return;
       }
 
-      domainsListEl.innerHTML = result.topDomains
-        .map(
-          (item) => `
-        <div class="domain-item">
-          <span class="domain-name" title="${item.domain}">${item.domain}</span>
-          <span class="domain-count">${item.count} visits</span>
-        </div>
-      `
-        )
-        .join('');
+      const items = result.topDomains.map((item) => {
+        const row = document.createElement('div');
+        row.className = 'domain-item';
+
+        const name = document.createElement('span');
+        name.className = 'domain-name';
+        name.title = item.domain;
+        name.textContent = item.domain;
+
+        const count = document.createElement('span');
+        count.className = 'domain-count';
+        count.textContent = `${item.count} visits`;
+
+        row.appendChild(name);
+        row.appendChild(count);
+        return row;
+      });
+
+      domainsListEl.replaceChildren(...items);
     }
   }
 
@@ -112,7 +124,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (stepDetail) stepDetail.textContent = 'Local scan metrics removed from browser storage.';
     if (lastUpdatedEl) lastUpdatedEl.textContent = 'Cache cleared';
     if (domainsListEl) {
-      domainsListEl.innerHTML = '<div class="empty-state">Run analysis to inspect on-device domain frequency.</div>';
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'empty-state';
+      emptyEl.textContent = 'Run analysis to inspect on-device domain frequency.';
+      domainsListEl.replaceChildren(emptyEl);
     }
   });
 

@@ -4,7 +4,8 @@ import type { ExtensionMessage } from './index';
 
 /**
  * Automated Climate Action Maker (ACAM) - Content Script
- * Automatically detects matching websites and displays interactive climate interventions.
+ * Automatically detects matching websites and displays interactive climate interventions
+ * using isolated Shadow DOM and safe DOM manipulation (Zero innerHTML interpolation).
  */
 type ScenarioType = 'scenario-a' | 'scenario-c';
 
@@ -95,28 +96,25 @@ class ACAMContentScript {
 
   private armTrigger(scenario: ScenarioType): void {
     if (scenario === 'scenario-a') {
-      // Trigger Scenario A when user scrolls or after 3 seconds of reading
       const onScroll = () => {
         if (window.scrollY > 120 && !this.triggered) {
-          this.fire(scenario);
           window.removeEventListener('scroll', onScroll);
+          this.fire(scenario);
         }
       };
-
       window.addEventListener('scroll', onScroll, { passive: true });
       setTimeout(() => {
         if (!this.triggered) {
           window.removeEventListener('scroll', onScroll);
           this.fire(scenario);
         }
-      }, 3000);
-    } else if (scenario === 'scenario-c') {
-      // Trigger Scenario C automatically after 1.5 seconds on checkout page
+      }, 4000);
+    } else {
       setTimeout(() => {
         if (!this.triggered) {
           this.fire(scenario);
         }
-      }, 1500);
+      }, 1200);
     }
   }
 
@@ -167,9 +165,7 @@ class ACAMContentScript {
   }
 
   private displayIntervention(scenario: ScenarioType): void {
-    if (document.getElementById('acam-overlay-host')) {
-      return;
-    }
+    if (document.getElementById('acam-overlay-host')) return;
 
     this.container = document.createElement('div');
     this.container.id = 'acam-overlay-host';
@@ -177,24 +173,27 @@ class ACAMContentScript {
 
     const style = document.createElement('style');
     style.textContent = `
-      .acam-card {
+      :host {
+        all: initial;
         position: fixed;
         bottom: 24px;
         right: 24px;
         z-index: 2147483647;
-        width: 320px;
-        padding: 16px;
-        background: rgba(255, 255, 255, 0.96);
-        backdrop-filter: blur(12px);
-        border-radius: 14px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(16, 185, 129, 0.25);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        color: #111827;
-        animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
-      @keyframes slideUp {
-        from { opacity: 0; transform: translateY(16px) scale(0.97); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
+      .acam-card {
+        width: 320px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        padding: 16px;
+        box-sizing: border-box;
+        animation: acam-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes acam-slide-up {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
       }
       .acam-header {
         display: flex;
@@ -235,6 +234,7 @@ class ACAMContentScript {
         font-weight: 700;
         margin: 4px 0 6px 0;
         line-height: 1.3;
+        color: #111827;
       }
       .description {
         font-size: 12px;
@@ -286,6 +286,7 @@ class ACAMContentScript {
       .success-box {
         text-align: center;
         padding: 8px 4px;
+        width: 100%;
       }
       .success-title {
         font-size: 13px;
@@ -299,68 +300,115 @@ class ACAMContentScript {
       }
     `;
 
+    // Safe DOM Construction (No dynamic innerHTML)
     const card = document.createElement('div');
     card.className = 'acam-card';
 
+    const header = document.createElement('div');
+    header.className = 'acam-header';
+
+    const badge = document.createElement('span');
+    badge.className = `pill-badge ${scenario === 'scenario-a' ? 'active-civic' : 'passive-eco'}`;
+    badge.textContent = scenario === 'scenario-a' ? '🏛️ Civic Action Nudge' : '♻️ Compare Circular Options';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'close-btn';
+    closeBtn.className = 'dismiss-btn';
+    closeBtn.textContent = '×';
+
+    header.appendChild(badge);
+    header.appendChild(closeBtn);
+    card.appendChild(header);
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'title';
+    titleEl.textContent =
+      scenario === 'scenario-a' ? 'Turn Climate Anxiety into Action' : 'Find Refurbished Alternatives';
+    card.appendChild(titleEl);
+
+    const descEl = document.createElement('p');
+    descEl.className = 'description';
+    descEl.textContent =
+      scenario === 'scenario-a'
+        ? 'Reading climate policy? Send a 1-click prompt to your local representative supporting regional clean energy transition.'
+        : 'Manufacturing accounts for ~80% of electronics emissions. Compare verified second-life options to avoid high factory carbon.';
+    card.appendChild(descEl);
+
+    const snippetEl = document.createElement('div');
+    snippetEl.className = 'snippet-box';
+    card.appendChild(snippetEl);
+
+    const actionContainer = document.createElement('div');
+    actionContainer.id = 'action-container';
+    actionContainer.className = 'action-row';
+    card.appendChild(actionContainer);
+
     if (scenario === 'scenario-a') {
-      card.innerHTML = `
-        <div class="acam-header">
-          <span class="pill-badge active-civic">🏛️ Civic Action Nudge</span>
-          <button id="close-btn" class="dismiss-btn">&times;</button>
-        </div>
-        <div class="title">Turn Climate Anxiety into Action</div>
-        <p class="description">Reading climate policy? Send a 1-click prompt to your local representative supporting regional clean energy transition.</p>
-        <div class="snippet-box">"Urging swift passage of renewable energy standards in our district..."</div>
-        <div class="action-row" id="action-container">
-          <button id="action-btn" class="btn btn-primary">Send with 1-Click (+50 pts)</button>
-        </div>
-      `;
+      snippetEl.textContent = '"Urging swift passage of renewable energy standards in our district..."';
+
+      const actionBtn = document.createElement('button');
+      actionBtn.id = 'action-btn';
+      actionBtn.className = 'btn btn-primary';
+      actionBtn.textContent = 'Send with 1-Click (+50 pts)';
+      actionBtn.addEventListener('click', () => {
+        this.executeCivicAction(card);
+      });
+      actionContainer.appendChild(actionBtn);
     } else {
       const productTitle = this.extractProductTitle();
-      const encodedTitle = encodeURIComponent(productTitle);
-      card.innerHTML = `
-        <div class="acam-header">
-          <span class="pill-badge passive-eco">♻️ Compare Circular Options</span>
-          <button id="close-btn" class="dismiss-btn">&times;</button>
-        </div>
-        <div class="title">Find Refurbished Alternatives</div>
-        <p class="description">Manufacturing accounts for ~80% of electronics emissions. Compare verified second-life options to avoid high factory carbon.</p>
-        <div class="snippet-box">Target: ${productTitle} (Save up to ~65 kg CO₂e)</div>
-        <div class="action-row" id="action-container">
-          <button class="btn circular-btn" data-name="Back Market" data-url="https://www.backmarket.com/en-us/search?q=${encodedTitle}">Back Market</button>
-          <button class="btn circular-btn" data-name="eBay Refurbished" data-url="https://www.ebay.com/sch/i.html?_nkw=${encodedTitle}&LH_ItemCondition=2000|2500">eBay Refurbished</button>
-          <button class="btn circular-btn" data-name="Swappa" data-url="https://swappa.com/search?q=${encodedTitle}">Swappa</button>
-        </div>
-      `;
+      snippetEl.textContent = `Target: ${productTitle} (Save up to ~65 kg CO₂e)`;
+
+      const providers = [
+        { name: 'Back Market', urlPrefix: 'https://www.backmarket.com/en-us/search?q=' },
+        { name: 'eBay Refurbished', urlPrefix: 'https://www.ebay.com/sch/i.html?LH_ItemCondition=2000|2500&_nkw=' },
+        { name: 'Swappa', urlPrefix: 'https://swappa.com/search?q=' },
+      ];
+
+      for (const provider of providers) {
+        const btn = document.createElement('button');
+        btn.className = 'btn circular-btn';
+        btn.textContent = provider.name;
+        const targetUrl = `${provider.urlPrefix}${encodeURIComponent(productTitle)}`;
+
+        btn.addEventListener('click', () => {
+          this.executeCircularRedirect(targetUrl, provider.name, card);
+        });
+        actionContainer.appendChild(btn);
+      }
     }
+
+    closeBtn.addEventListener('click', () => {
+      this.removePrompt();
+    });
 
     this.shadowRoot.appendChild(style);
     this.shadowRoot.appendChild(card);
     document.body.appendChild(this.container);
-
-    card.querySelector('#close-btn')?.addEventListener('click', () => {
-      this.removePrompt();
-    });
-
-    if (scenario === 'scenario-a') {
-      card.querySelector('#action-btn')?.addEventListener('click', () => {
-        this.executeCivicAction(card);
-      });
-    } else {
-      card.querySelectorAll<HTMLButtonElement>('.circular-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const url = btn.dataset['url'] || '';
-          const name = btn.dataset['name'] || 'Refurbished';
-          this.executeCircularRedirect(url, name, card);
-        });
-      });
-    }
   }
 
-  private executeCivicAction(card: HTMLElement): void {
+  private showSuccessMessage(card: HTMLElement, titleText: string, subText: string): void {
     const actionContainer = card.querySelector('#action-container');
     if (!actionContainer) return;
 
+    const successBox = document.createElement('div');
+    successBox.className = 'success-box';
+
+    const successTitle = document.createElement('div');
+    successTitle.className = 'success-title';
+    successTitle.textContent = titleText;
+
+    const successSub = document.createElement('div');
+    successSub.className = 'success-sub';
+    successSub.textContent = subText;
+
+    successBox.appendChild(successTitle);
+    successBox.appendChild(successSub);
+
+    actionContainer.replaceChildren(successBox);
+    setTimeout(() => this.removePrompt(), 2500);
+  }
+
+  private executeCivicAction(card: HTMLElement): void {
     chrome.runtime.sendMessage(
       {
         type: 'RECORD_ACTION',
@@ -372,21 +420,16 @@ class ACAMContentScript {
         },
       },
       () => {
-        actionContainer.innerHTML = `
-          <div class="success-box">
-            <div class="success-title">✓ Civic Comment Submitted!</div>
-            <div class="success-sub">+50 points earned | Letter queued to rep's office</div>
-          </div>
-        `;
-        setTimeout(() => this.removePrompt(), 2500);
+        this.showSuccessMessage(
+          card,
+          '✓ Civic Comment Submitted!',
+          '+50 points earned | Letter queued to rep\'s office'
+        );
       }
     );
   }
 
   private executeCircularRedirect(targetUrl: string, provider: string, card: HTMLElement): void {
-    const actionContainer = card.querySelector('#action-container');
-    if (!actionContainer) return;
-
     if (targetUrl) {
       window.open(targetUrl, '_blank');
     }
@@ -402,13 +445,11 @@ class ACAMContentScript {
         },
       },
       () => {
-        actionContainer.innerHTML = `
-          <div class="success-box">
-            <div class="success-title">✓ ${provider} Opened!</div>
-            <div class="success-sub">+80 pts | Up to ~65 kg embodied CO₂ saved</div>
-          </div>
-        `;
-        setTimeout(() => this.removePrompt(), 2500);
+        this.showSuccessMessage(
+          card,
+          `✓ ${provider} Opened!`,
+          '+80 pts | Up to ~65 kg embodied CO₂ saved'
+        );
       }
     );
   }

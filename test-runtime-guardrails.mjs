@@ -136,6 +136,28 @@ try {
     );
   }
 
+  // -------------------------------------------------------------
+  // GUARDRAIL 5: Host Page Scope Isolation (Zero Window Global Leaks)
+  // -------------------------------------------------------------
+  const globalLeakCheck = await contentPage.evaluate(() => {
+    const leakedVars = ['ACAM', 'ACAMContentScript', 'ACAMStats', 'recordClimateAction'].filter(
+      (key) => window[key] !== undefined
+    );
+    return {
+      leakedVars,
+      isClean: leakedVars.length === 0,
+    };
+  });
+
+  if (globalLeakCheck.isClean) {
+    reportPass('Host Scope Isolation: 0 extension classes or variables leaked into host page window scope');
+  } else {
+    reportFail(
+      'Host Scope Isolation',
+      `Extension leaked globals to host window: ${JSON.stringify(globalLeakCheck.leakedVars)}`
+    );
+  }
+
   await popupPage.close();
   await contentPage.close();
 } catch (err) {
