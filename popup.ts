@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
 
-import type { HistoryScanResult, StreamStep } from './index';
+import { STORAGE_KEYS, type HistoryScanResult, type StreamStep } from './index';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const permissionCard = document.getElementById('permission-card') as HTMLElement | null;
@@ -78,8 +78,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadCachedScan(): Promise<void> {
-    const data = await chrome.storage.local.get('lastHistoryScan');
-    const cached = data['lastHistoryScan'] as HistoryScanResult | undefined;
+    const data = await chrome.storage.local.get([
+      STORAGE_KEYS.LAST_HISTORY_SCAN,
+      STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
+    ]);
+    const cached = data[STORAGE_KEYS.LAST_HISTORY_SCAN] as HistoryScanResult | undefined;
     if (cached) {
       renderResults(cached);
       if (stepTitle) stepTitle.textContent = 'Last Scan Loaded';
@@ -148,7 +151,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   scanBtn?.addEventListener('click', startTraceStream);
 
   purgeBtn?.addEventListener('click', async () => {
-    await chrome.storage.local.remove(['lastHistoryScan', 'footprintSnapshot']);
+    await chrome.storage.local.remove([
+      STORAGE_KEYS.LAST_HISTORY_SCAN,
+      STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
+      STORAGE_KEYS.LAST_INCREMENTAL_TIMESTAMP,
+    ]);
     if (googleCountEl) googleCountEl.textContent = '0';
     if (nonGoogleCountEl) nonGoogleCountEl.textContent = '0';
     if (totalCountEl) totalCountEl.textContent = '0';

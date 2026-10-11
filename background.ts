@@ -2,8 +2,10 @@
 
 import {
   DEFAULT_SCAN_CONFIG,
+  STORAGE_KEYS,
   createDigitalFootprintSnapshot,
   createHistorySlot,
+  migrateStorageState,
   type DigitalFootprintSnapshot,
   type DomainFrequency,
   type ExtensionMessage,
@@ -30,19 +32,29 @@ interface RecordActionPayload {
   points: number;
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
-  const initialStats: ACAMStats = {
-    greetingCount: 0,
-    totalCo2SavedKg: 0,
-    civicPoints: 0,
-    actionsCount: 0,
-  };
-
-  const stored = await chrome.storage.local.get(['stats', 'lastHistoryScan']);
-  if (!stored['stats']) {
-    await chrome.storage.local.set({ stats: initialStats });
+async function runStorageMigration(): Promise<void> {
+  try {
+    const allData = await chrome.storage.local.get(null);
+    const { updatedState, result } = migrateStorageState(allData);
+    if (result.migrated) {
+      await chrome.storage.local.set(updatedState);
+      console.log(
+        `[ACAM] Migrated storage schema v${result.fromVersion} -> v${result.toVersion}. Keys updated:`,
+        result.keysUpdated
+      );
+    }
+  } catch (err) {
+    console.error('[ACAM] Storage migration error:', err);
   }
-  console.log('[ACAM] Service worker installed and storage initialized.');
+}
+
+chrome.runtime.onInstalled.addListener(async () => {
+  await runStorageMigration();
+  console.log('[ACAM] Service worker installed and storage initialized/migrated.');
+});
+
+chrome.runtime.onStartup.addListener(async () => {
+  await runStorageMigration();
 });
 
 // Helper for smooth, observable streaming steps
@@ -184,8 +196,8 @@ chrome.runtime.onConnect.addListener((port) => {
       });
 
       await chrome.storage.local.set({
-        lastHistoryScan: result,
-        footprintSnapshot,
+        [STORAGE_KEYS.LAST_HISTORY_SCAN]: result,
+        [STORAGE_KEYS.FOOTPRINT_SNAPSHOT]: footprintSnapshot,
       });
 
       port.postMessage({
@@ -233,14 +245,16 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === 'GET_STATUS') {
-      chrome.storage.local.get(['stats', 'lastHistoryScan', 'footprintSnapshot']).then((data) => {
-        sendResponse({
-          status: 'active',
-          stats: data['stats'] || { greetingCount: 0, totalCo2SavedKg: 0, civicPoints: 0, actionsCount: 0 },
-          lastHistoryScan: data['lastHistoryScan'] || null,
-          footprintSnapshot: data['footprintSnapshot'] || null,
+      chrome.storage.local
+        .get([STORAGE_KEYS.STATS, STORAGE_KEYS.LAST_HISTORY_SCAN, STORAGE_KEYS.FOOTPRINT_SNAPSHOT])
+        .then((data) => {
+          sendResponse({
+            status: 'active',
+            stats: data[STORAGE_KEYS.STATS] || { greetingCount: 0, totalCo2SavedKg: 0, civicPoints: 0, actionsCount: 0 },
+            lastHistoryScan: data[STORAGE_KEYS.LAST_HISTORY_SCAN] || null,
+            footprintSnapshot: data[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] || null,
+          });
         });
-      });
       return true;
     }
 
@@ -249,8 +263,8 @@ chrome.runtime.onMessage.addListener(
 );
 
 async function recordClimateAction(payload: RecordActionPayload): Promise<ACAMStats> {
-  const data = await chrome.storage.local.get('stats');
-  const stats: ACAMStats = data['stats'] || {
+  const data = await chrome.storage.local.get(STORAGE_KEYS.STATS);
+  const stats: ACAMStats = data[STORAGE_KEYS.STATS] || {
     greetingCount: 0,
     totalCo2SavedKg: 0,
     civicPoints: 0,
@@ -262,7 +276,7 @@ async function recordClimateAction(payload: RecordActionPayload): Promise<ACAMSt
   stats.actionsCount += 1;
   stats.greetingCount += 1;
 
-  await chrome.storage.local.set({ stats });
+  await chrome.storage.local.set({ [STORAGE_KEYS.STATS]: stats });
   return stats;
 }
 

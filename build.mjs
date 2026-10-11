@@ -38,6 +38,18 @@ const buildOptions = {
   minify: !isWatch,
 };
 
+const libBuildOptions = {
+  entryPoints: {
+    index: 'index.ts',
+  },
+  bundle: true,
+  format: 'esm',
+  outdir: 'dist',
+  target: 'node18',
+  sourcemap: true,
+  minify: !isWatch,
+};
+
 if (isWatch) {
   const ctx = await esbuild.context({
     ...buildOptions,
@@ -56,6 +68,9 @@ if (isWatch) {
   console.log('[esbuild] Watching for changes...');
 } else {
   copyStaticFiles();
-  await esbuild.build(buildOptions);
+  await Promise.all([
+    esbuild.build(buildOptions),
+    esbuild.build(libBuildOptions),
+  ]);
   console.log('[esbuild] Build complete. Output written to dist/');
 }

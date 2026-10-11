@@ -335,3 +335,111 @@ export function createDigitalFootprintSnapshot(options?: {
     },
   };
 }
+
+// ============================================================================
+// 8. Storage Key Registry & Schema Migration Framework
+// ============================================================================
+
+export const STORAGE_KEYS = {
+  STATS: 'stats',
+  LAST_HISTORY_SCAN: 'lastHistoryScan',
+  FOOTPRINT_SNAPSHOT: 'footprintSnapshot',
+  AUTO_SCAN_ENABLED: 'autoScanEnabled',
+  LAST_INCREMENTAL_TIMESTAMP: 'lastIncrementalTimestamp',
+  SCHEMA_VERSION: 'schemaVersion',
+} as const;
+
+export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+
+export interface StorageMigrationResult {
+  migrated: boolean;
+  fromVersion: number;
+  toVersion: number;
+  keysUpdated: string[];
+}
+
+/**
+ * Validates and migrates stored data to the current schema (Schema Version 1).
+ * Seamlessly upgrades legacy states (e.g. raw lastHistoryScan without footprintSnapshot)
+ * while preserving user civic points and impact statistics.
+ */
+export function migrateStorageState(
+  rawData: Record<string, unknown>
+): { updatedState: Record<string, unknown>; result: StorageMigrationResult } {
+  const updatedState: Record<string, unknown> = { ...rawData };
+  const keysUpdated: string[] = [];
+
+  const currentVersion = (rawData[STORAGE_KEYS.SCHEMA_VERSION] as number) || 0;
+  let migrated = false;
+
+  // 1. Upgrade stats structure if missing fields
+  const rawStats = rawData[STORAGE_KEYS.STATS] as Record<string, unknown> | undefined;
+  const initialStats = {
+    greetingCount: 0,
+    totalCo2SavedKg: 0,
+    civicPoints: 0,
+    actionsCount: 0,
+  };
+
+  if (!rawStats) {
+    updatedState[STORAGE_KEYS.STATS] = initialStats;
+    keysUpdated.push(STORAGE_KEYS.STATS);
+    migrated = true;
+  } else {
+    let statsNeedsFix = false;
+    const sanitizedStats = { ...initialStats, ...rawStats };
+    for (const key of Object.keys(initialStats) as (keyof typeof initialStats)[]) {
+      if (rawStats[key] === undefined) {
+        statsNeedsFix = true;
+      }
+    }
+    if (statsNeedsFix) {
+      updatedState[STORAGE_KEYS.STATS] = sanitizedStats;
+      keysUpdated.push(STORAGE_KEYS.STATS);
+      migrated = true;
+    }
+  }
+
+  // 2. Upgrade legacy lastHistoryScan to footprintSnapshot if snapshot is missing
+  const legacyScan = rawData[STORAGE_KEYS.LAST_HISTORY_SCAN] as HistoryScanResult | undefined;
+  const existingSnapshot = rawData[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] as DigitalFootprintSnapshot | undefined;
+
+  if (legacyScan && (!existingSnapshot || existingSnapshot.schemaVersion !== 1)) {
+    // Keep domains bounded (top 100) to protect local storage footprint
+    const boundedDomains = (legacyScan.topDomains || []).slice(0, 100);
+    const sanitizedScan: HistoryScanResult = {
+      ...legacyScan,
+      topDomains: boundedDomains,
+    };
+
+    const historySlot = createHistorySlot(sanitizedScan);
+    const migratedSnapshot = createDigitalFootprintSnapshot({
+      ingestionMode: 'manual_deep_audit',
+      clientPlatform: 'chromium',
+      sources: {
+        history: historySlot,
+      },
+    });
+
+    updatedState[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] = migratedSnapshot;
+    keysUpdated.push(STORAGE_KEYS.FOOTPRINT_SNAPSHOT);
+    migrated = true;
+  }
+
+  // 3. Mark current storage schema version
+  if (currentVersion !== 1) {
+    updatedState[STORAGE_KEYS.SCHEMA_VERSION] = 1;
+    keysUpdated.push(STORAGE_KEYS.SCHEMA_VERSION);
+    migrated = true;
+  }
+
+  return {
+    updatedState,
+    result: {
+      migrated,
+      fromVersion: currentVersion,
+      toVersion: 1,
+      keysUpdated,
+    },
+  };
+}
