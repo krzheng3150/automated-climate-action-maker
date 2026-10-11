@@ -91,14 +91,39 @@ try {
   }
 
   // -------------------------------------------------------------
+  // GUARDRAIL 2B: DigitalFootprintSnapshot Schema & Governance Contract
+  // -------------------------------------------------------------
+  const snapshotData = await popupPage.evaluate(async () => {
+    return await chrome.storage.local.get('footprintSnapshot');
+  });
+  const snapshot = snapshotData.footprintSnapshot;
+  if (
+    snapshot &&
+    snapshot.schemaVersion === 1 &&
+    snapshot.sources?.history &&
+    snapshot.projection?.primaryArchetype &&
+    snapshot.governance?.zeroNetworkTelemetry === true
+  ) {
+    reportPass('DigitalFootprintSnapshot Contract: Schema v1 validated with history slot, projection, and zero-telemetry');
+  } else {
+    reportFail('DigitalFootprintSnapshot Contract', `Invalid or missing snapshot: ${JSON.stringify(snapshot)}`);
+  }
+
+  // -------------------------------------------------------------
   // GUARDRAIL 3: Atomic Storage Purge Contract
   // -------------------------------------------------------------
   await popupPage.click('#purge-btn');
   const totalCountAfterPurge = await popupPage.$eval('#total-count', (el) => el.textContent);
-  if (totalCountAfterPurge === '0') {
-    reportPass('Atomic Purge Contract: Local metrics cleared to 0 on purge action');
+  const storageAfterPurge = await popupPage.evaluate(async () => {
+    return await chrome.storage.local.get(['lastHistoryScan', 'footprintSnapshot']);
+  });
+  if (totalCountAfterPurge === '0' && !storageAfterPurge.lastHistoryScan && !storageAfterPurge.footprintSnapshot) {
+    reportPass('Atomic Purge Contract: Local metrics and footprint snapshot cleared on purge action');
   } else {
-    reportFail('Atomic Purge Contract', `Total count after purge was ${totalCountAfterPurge}, expected 0`);
+    reportFail(
+      'Atomic Purge Contract',
+      `Purge failed: count=${totalCountAfterPurge}, storage=${JSON.stringify(storageAfterPurge)}`
+    );
   }
 
   // -------------------------------------------------------------

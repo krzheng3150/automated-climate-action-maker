@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   scanBtn?.addEventListener('click', startTraceStream);
 
   purgeBtn?.addEventListener('click', async () => {
-    await chrome.storage.local.remove('lastHistoryScan');
+    await chrome.storage.local.remove(['lastHistoryScan', 'footprintSnapshot']);
     if (googleCountEl) googleCountEl.textContent = '0';
     if (nonGoogleCountEl) nonGoogleCountEl.textContent = '0';
     if (totalCountEl) totalCountEl.textContent = '0';

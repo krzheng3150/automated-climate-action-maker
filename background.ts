@@ -2,6 +2,9 @@
 
 import {
   DEFAULT_SCAN_CONFIG,
+  createDigitalFootprintSnapshot,
+  createHistorySlot,
+  type DigitalFootprintSnapshot,
   type DomainFrequency,
   type ExtensionMessage,
   type HelloStats,
@@ -170,7 +173,20 @@ chrome.runtime.onConnect.addListener((port) => {
         timeframeDays,
       };
 
-      await chrome.storage.local.set({ lastHistoryScan: result });
+      const historySlot = createHistorySlot(result, { durationMs: 1100 });
+      const footprintSnapshot = createDigitalFootprintSnapshot({
+        ingestionMode: 'manual_deep_audit',
+        clientPlatform: 'chromium',
+        sources: {
+          history: historySlot,
+        },
+        extensionVersion: '0.1.0',
+      });
+
+      await chrome.storage.local.set({
+        lastHistoryScan: result,
+        footprintSnapshot,
+      });
 
       port.postMessage({
         step: 4,
@@ -217,11 +233,12 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === 'GET_STATUS') {
-      chrome.storage.local.get(['stats', 'lastHistoryScan']).then((data) => {
+      chrome.storage.local.get(['stats', 'lastHistoryScan', 'footprintSnapshot']).then((data) => {
         sendResponse({
           status: 'active',
           stats: data['stats'] || { greetingCount: 0, totalCo2SavedKg: 0, civicPoints: 0, actionsCount: 0 },
           lastHistoryScan: data['lastHistoryScan'] || null,
+          footprintSnapshot: data['footprintSnapshot'] || null,
         });
       });
       return true;
