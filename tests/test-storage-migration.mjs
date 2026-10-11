@@ -1,4 +1,4 @@
-import { migrateStorageState, STORAGE_KEYS } from './dist/index.js';
+import { migrateStorageState, STORAGE_KEYS } from '../dist/index.js';
 
 console.log('[Test: Storage Migration] Verifying schema upgrade and data protection...');
 

@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const projectRoot = path.dirname(__filename);
+const scriptsDir = path.dirname(__filename);
+const projectRoot = path.resolve(scriptsDir, '..');
 
 console.log('[Guardrails: Static] Running static code & manifest audit...');
 
@@ -82,9 +83,11 @@ try {
       reportFailure('Store Asset Completeness', 'manifest.json', `Missing icon size ${s} in manifest.icons`);
       missingIcons++;
     } else {
-      const fullPath = path.join(projectRoot, iconRel);
-      if (!existsSync(fullPath)) {
-        reportFailure('Store Asset Completeness', iconRel, `Icon file does not exist on disk: ${fullPath}`);
+      const sourceAssetPath = path.join(projectRoot, 'assets', iconRel);
+      const rootPath = path.join(projectRoot, iconRel);
+      const distPath = path.join(projectRoot, 'dist', iconRel);
+      if (!existsSync(sourceAssetPath) && !existsSync(rootPath) && !existsSync(distPath)) {
+        reportFailure('Store Asset Completeness', iconRel, `Icon file does not exist on disk: ${sourceAssetPath}`);
         missingIcons++;
       }
     }
@@ -99,9 +102,14 @@ try {
 // -------------------------------------------------------------
 // 2. Scan TypeScript Source Files
 // -------------------------------------------------------------
-const tsFiles = readdirSync(projectRoot)
-  .filter((f) => f.endsWith('.ts'))
-  .map((f) => path.join(projectRoot, f));
+const srcDir = path.join(projectRoot, 'src');
+const tsFiles = existsSync(srcDir)
+  ? readdirSync(srcDir)
+      .filter((f) => f.endsWith('.ts'))
+      .map((f) => path.join(srcDir, f))
+  : readdirSync(projectRoot)
+      .filter((f) => f.endsWith('.ts'))
+      .map((f) => path.join(projectRoot, f));
 
 const forbiddenNetworkPatterns = [
   { pattern: /\bfetch\s*\(/g, name: 'fetch()' },

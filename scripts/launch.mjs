@@ -5,12 +5,13 @@ import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const extensionPath = path.join(__dirname, 'dist');
+const scriptsDir = path.dirname(__filename);
+const projectRoot = path.resolve(scriptsDir, '..');
+const extensionPath = path.join(projectRoot, 'dist');
 
 // 1. Run the compilation build step
 console.log('[ACAM] Compiling extension...');
-execSync('npm run build', { stdio: 'inherit', cwd: __dirname });
+execSync('npm run build', { stdio: 'inherit', cwd: projectRoot });
 
 // Ensure Chrome binary is available
 const systemPaths = [
@@ -71,7 +72,7 @@ if (!hasDisplay) {
   try {
     await page.waitForSelector('#acam-overlay-host', { timeout: 6000 });
     console.log('[ACAM] ✓ ACAM overlay card successfully injected!');
-    const screenshotsDir = path.join(__dirname, 'screenshots');
+    const screenshotsDir = path.join(projectRoot, 'assets', 'screenshots');
     mkdirSync(screenshotsDir, { recursive: true });
     const screenshotPath = path.join(screenshotsDir, 'acam-test.png');
     await page.screenshot({ path: screenshotPath });

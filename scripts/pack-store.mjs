@@ -4,7 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const projectRoot = path.dirname(__filename);
+const scriptsDir = path.dirname(__filename);
+const projectRoot = path.resolve(scriptsDir, '..');
 const distPath = path.join(projectRoot, 'dist');
 
 console.log('[Packager] Preparing official Chrome Web Store production package...');

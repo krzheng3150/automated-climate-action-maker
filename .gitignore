@@ -3,7 +3,7 @@ dist/
 *.zip
 .cache/
 .DS_Store
-screenshots/
+assets/screenshots/
 *.png
-!icons/*.png
-!store-assets/*.png
+!assets/icons/*.png
+!assets/store/*.png

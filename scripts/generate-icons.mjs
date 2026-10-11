@@ -4,8 +4,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const projectRoot = path.dirname(__filename);
-const iconsDir = path.join(projectRoot, 'icons');
+const scriptsDir = path.dirname(__filename);
+const projectRoot = path.resolve(scriptsDir, '..');
+const iconsDir = path.join(projectRoot, 'assets', 'icons');
 mkdirSync(iconsDir, { recursive: true });
 
 const svgIcon = `

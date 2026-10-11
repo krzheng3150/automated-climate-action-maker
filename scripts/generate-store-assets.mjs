@@ -4,8 +4,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const projectRoot = path.dirname(__filename);
-const assetsDir = path.join(projectRoot, 'store-assets');
+const scriptsDir = path.dirname(__filename);
+const projectRoot = path.resolve(scriptsDir, '..');
+const assetsDir = path.join(projectRoot, 'assets', 'store');
 mkdirSync(assetsDir, { recursive: true });
 
 const browser = await puppeteer.launch({

@@ -3,8 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const extensionPath = path.resolve(__dirname, 'dist');
+const testsDir = path.dirname(__filename);
+const projectRoot = path.resolve(testsDir, '..');
+const extensionPath = path.join(projectRoot, 'dist');
 
 console.log('[E2E Regression Check] Testing all extension subsystems...');
 

@@ -9,23 +9,34 @@ A TypeScript-based Web Browser Extension (Manifest V3) that demonstrates a **100
 
 ```
 automated-climate-action-maker/
-├── build.mjs                 # esbuild bundling pipeline (MV3 ESM service worker + IIFE scripts)
+├── src/                      # Extension source code
+│   ├── background.ts         # Service worker compute engine and trace stream emitter
+│   ├── content.ts            # Content script with DOM scanner and Shadow DOM overlays
+│   ├── popup.ts              # Foreground UI controller and stream event listener
+│   ├── popup.html            # Non-terminal visual stream UI
+│   ├── popup.css             # Popup styles (progress bar, pulsing stream dot, domain lists)
+│   └── index.ts              # Shared data schemas, types, and default scan configurations
+├── assets/                   # Visual & store assets
+│   ├── icons/                # Extension runtime icons (16, 32, 48, 128 PNG)
+│   ├── store/                # Chrome Web Store promo tiles (440x280, 1400x560)
+│   └── screenshots/          # Store screenshots (1280x800)
+├── scripts/                  # Bundling, analysis, and developer tooling
+│   ├── build.mjs             # esbuild bundling pipeline (MV3 ESM service worker + IIFE scripts)
+│   ├── pack-store.mjs        # Production packager for Chrome Web Store upload
+│   ├── check-static.mjs      # Static AST code & manifest guardrails linter
+│   ├── generate-icons.mjs    # Standard icon generator (16, 32, 48, 128 PNG)
+│   ├── generate-store-assets.mjs # Promo tile and screenshot renderer
+│   └── launch.mjs            # Interactive launcher script
+├── tests/                    # Automated testing suite
+│   ├── test-storage-migration.mjs # Storage migration & schema upgrade suite
+│   ├── test-runtime-guardrails.mjs # Headless Puppeteer network firewall & isolation test
+│   ├── test-history-stream.mjs # Headless Puppeteer stream verification suite
+│   ├── test-e2e-all.mjs      # Full end-to-end multi-scenario subsystem test
+│   └── test-runner.mjs       # Minimal smoke test
+├── manifest.json             # Extension manifest (storage, activeTab, history, alarms)
 ├── package.json              # Project dependencies and test scripts
 ├── tsconfig.json             # TypeScript strict configuration
-├── manifest.json             # Extension manifest (storage, activeTab, history)
-├── popup.html                # Non-terminal visual stream UI
-├── popup.css                 # Popup styles (progress bar, pulsing stream dot, domain lists)
-├── popup.ts                  # Foreground UI controller and stream event listener
-├── background.ts             # Service worker compute engine and trace stream emitter
-├── content.ts                # Content script with DOM scanner and Shadow DOM overlays
-├── index.ts                  # Shared data schemas, types, and default scan configurations
-├── check-static.mjs          # Static AST code & manifest guardrails linter
-├── test-runtime-guardrails.mjs # Headless Puppeteer network firewall & isolation test
-├── test-history-stream.mjs   # Headless Puppeteer stream verification suite
-├── test-e2e-all.mjs          # Full end-to-end multi-scenario subsystem test
-├── generate-icons.mjs        # Standard icon generator (16, 32, 48, 128 PNG)
-├── pack-store.mjs            # Production packager for Chrome Web Store upload
-└── launch.mjs                # Interactive launcher script
+└── PRIVACY_POLICY.md         # Public zero-telemetry privacy disclosure
 ```
 
 ## Getting Started

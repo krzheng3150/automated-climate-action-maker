@@ -1,7 +1,10 @@
 import puppeteer from 'puppeteer';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const pathToExtension = path.resolve('dist');
+const __filename = fileURLToPath(import.meta.url);
+const projectRoot = path.resolve(path.dirname(__filename), '..');
+const pathToExtension = path.join(projectRoot, 'dist');
 
 const browser = await puppeteer.launch({
   headless: 'new',

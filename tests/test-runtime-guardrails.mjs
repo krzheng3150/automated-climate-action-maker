@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
-const projectRoot = path.dirname(__filename);
+const testsDir = path.dirname(__filename);
+const projectRoot = path.resolve(testsDir, '..');
 const extensionPath = path.join(projectRoot, 'dist');
 
 console.log('[Guardrails: Runtime] Launching headless browser to test runtime security & isolation...');
