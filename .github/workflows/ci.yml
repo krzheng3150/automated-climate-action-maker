@@ -1,0 +1,56 @@
+name: CI & Store Packaging Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit-test-package:
+    name: Audit, Verify & Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: 1. TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: 2. Static Security & Manifest Audit
+        run: npm run check:static
+
+      - name: 3. Storage Versioning & Migration Suite
+        run: npm run test:migration
+
+      - name: 4. Runtime Security Guardrails (Puppeteer)
+        run: npm run check:runtime
+
+      - name: 5. End-to-End Regression Suite
+        run: npm run test:e2e
+
+      - name: 6. Build Chrome Web Store Package
+        run: npm run pack:store
+
+      - name: 7. Upload Production Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: acam-chrome-extension-package
+          path: acam-v*.zip
+          retention-days: 14
+          if-no-files-found: error
