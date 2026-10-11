@@ -34,7 +34,7 @@ try {
   }
 
   // Store Compliance: Permission Minimization & Scope Check
-  const allowedPermissions = ['storage', 'activeTab', 'history'];
+  const allowedPermissions = ['storage', 'activeTab', 'history', 'alarms'];
   const permissions = manifest.permissions || [];
   const excessPermissions = permissions.filter((p) => !allowedPermissions.includes(p));
   if (excessPermissions.length > 0) {
@@ -44,7 +44,7 @@ try {
       `Unexpected or excessive permissions detected: ${JSON.stringify(excessPermissions)}. Must strictly be ${JSON.stringify(allowedPermissions)}.`
     );
   } else {
-    reportPass('Permissions Minimization: Limited to core single-purpose set (storage, activeTab, history)');
+    reportPass('Permissions Minimization: Limited to core single-purpose set (storage, activeTab, history, alarms)');
   }
 
   // Zero Outbound Host Permissions / Network Egress check

@@ -308,6 +308,85 @@ header {
   padding: 12px 0;
 }
 
+/* Settings & Toggle Switch */
+.settings-card {
+  padding: 10px 14px;
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toggle-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.toggle-desc {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.2s ease;
+  border-radius: 20px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s ease;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #10b981;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #10b981;
+}
+
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
 footer {
   text-align: center;
   margin-top: 4px;

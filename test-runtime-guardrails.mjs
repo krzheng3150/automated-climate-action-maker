@@ -110,6 +110,47 @@ try {
   }
 
   // -------------------------------------------------------------
+  // GUARDRAIL 2C: Conservative Fallback Alarm & Toggle Sync
+  // -------------------------------------------------------------
+  const initialAlarm = await popupPage.evaluate(async () => {
+    return await chrome.alarms.get('acam-conservative-sync');
+  });
+  if (initialAlarm && initialAlarm.name === 'acam-conservative-sync') {
+    reportPass('Conservative Fallback Alarm Contract: 12-hour background sync alarm registered');
+  } else {
+    reportFail('Conservative Fallback Alarm Contract', `Alarm missing: ${JSON.stringify(initialAlarm)}`);
+  }
+
+  // Toggle Auto-Scan OFF
+  await popupPage.evaluate(() => {
+    const el = document.getElementById('auto-scan-toggle');
+    el?.click();
+  });
+  await new Promise((r) => setTimeout(r, 200));
+
+  const alarmAfterToggleOff = await popupPage.evaluate(async () => {
+    const storage = await chrome.storage.local.get('autoScanEnabled');
+    const alarm = await chrome.alarms.get('acam-conservative-sync');
+    return { autoScanEnabled: storage.autoScanEnabled, alarmPresent: Boolean(alarm) };
+  });
+
+  if (alarmAfterToggleOff.autoScanEnabled === false && !alarmAfterToggleOff.alarmPresent) {
+    reportPass('Auto-Scan Toggle Contract: Disabling toggle clears background alarm and persists state');
+  } else {
+    reportFail(
+      'Auto-Scan Toggle Contract',
+      `Toggle off failed: ${JSON.stringify(alarmAfterToggleOff)}`
+    );
+  }
+
+  // Toggle Auto-Scan back ON
+  await popupPage.evaluate(() => {
+    const el = document.getElementById('auto-scan-toggle');
+    el?.click();
+  });
+  await new Promise((r) => setTimeout(r, 200));
+
+  // -------------------------------------------------------------
   // GUARDRAIL 3: Atomic Storage Purge Contract
   // -------------------------------------------------------------
   await popupPage.click('#purge-btn');

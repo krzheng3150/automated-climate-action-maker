@@ -3,6 +3,7 @@
 import {
   DEFAULT_SCAN_CONFIG,
   STORAGE_KEYS,
+  aggregateIncrementalVisits,
   createDigitalFootprintSnapshot,
   createHistorySlot,
   migrateStorageState,
@@ -11,7 +12,9 @@ import {
   type ExtensionMessage,
   type HelloStats,
   type HistoryScanResult,
+  type IngestionMode,
   type StreamStep,
+  type VisitedDomainDelta,
 } from './index';
 
 /**
@@ -48,13 +51,125 @@ async function runStorageMigration(): Promise<void> {
   }
 }
 
+// Ephemeral in-memory visit buffer for activity-driven batching
+let pendingVisitBuffer: VisitedDomainDelta[] = [];
+const FLUSH_BATCH_SIZE = 10;
+const CONSERVATIVE_ALARM_NAME = 'acam-conservative-sync';
+
+async function configureConservativeAlarm(enabled: boolean): Promise<void> {
+  if (enabled) {
+    chrome.alarms.create(CONSERVATIVE_ALARM_NAME, {
+      periodInMinutes: 720, // 12-hour conservative fallback
+    });
+  } else {
+    await chrome.alarms.clear(CONSERVATIVE_ALARM_NAME);
+  }
+}
+
+async function flushPendingVisits(mode: IngestionMode = 'event_driven_stream'): Promise<void> {
+  if (pendingVisitBuffer.length === 0) return;
+
+  const batchToProcess = [...pendingVisitBuffer];
+  pendingVisitBuffer = [];
+
+  try {
+    const data = await chrome.storage.local.get([
+      STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
+      STORAGE_KEYS.AUTO_SCAN_ENABLED,
+    ]);
+
+    const autoScanEnabled = data[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
+    if (!autoScanEnabled) return;
+
+    let snapshot = data[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] as DigitalFootprintSnapshot | undefined;
+    if (!snapshot) {
+      snapshot = createDigitalFootprintSnapshot({
+        ingestionMode: mode,
+        clientPlatform: 'chromium',
+        extensionVersion: '0.1.0',
+      });
+    }
+
+    const currentHistorySlot = snapshot.sources?.history ?? {
+      sourceKey: 'history',
+      strategy: 'delta',
+      collectedAt: Date.now(),
+      durationMs: 0,
+      recordCount: 0,
+      confidenceScore: 0.9,
+      lookbackDays: 7,
+      googleCount: 0,
+      nonGoogleCount: 0,
+      totalHits: 0,
+      topDomains: [],
+    };
+
+    // Layer 1 pure aggregation (<2ms, decoupled from recommendations)
+    const updatedSlot = aggregateIncrementalVisits(currentHistorySlot, batchToProcess);
+    snapshot.sources.history = updatedSlot;
+    snapshot.platform.ingestionMode = mode;
+
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.FOOTPRINT_SNAPSHOT]: snapshot,
+      [STORAGE_KEYS.LAST_INCREMENTAL_TIMESTAMP]: Date.now(),
+    });
+  } catch (err) {
+    console.error('[ACAM] Failed to flush pending visits:', err);
+  }
+}
+
+// Activity-Driven Trigger: Listen to new visits in real time
+chrome.history.onVisited.addListener(async (item) => {
+  if (!item.url) return;
+  try {
+    const parsed = new URL(item.url);
+    const hostname = parsed.hostname.toLowerCase();
+    if (!hostname) return;
+
+    pendingVisitBuffer.push({
+      domain: hostname,
+      isGoogle: isGoogleDomain(hostname),
+    });
+
+    if (pendingVisitBuffer.length >= FLUSH_BATCH_SIZE) {
+      await flushPendingVisits('event_driven_stream');
+    }
+  } catch {
+    // Ignore internal or unparseable URLs
+  }
+});
+
+// Conservative Fallback Alarm Listener
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === CONSERVATIVE_ALARM_NAME) {
+    await flushPendingVisits('scheduled_incremental');
+  }
+});
+
+// React immediately to Auto-Scan toggle changes from popup
+chrome.storage.onChanged.addListener(async (changes, areaName) => {
+  if (areaName === 'local' && changes[STORAGE_KEYS.AUTO_SCAN_ENABLED]) {
+    const isEnabled = changes[STORAGE_KEYS.AUTO_SCAN_ENABLED].newValue !== false;
+    await configureConservativeAlarm(isEnabled);
+    if (!isEnabled) {
+      pendingVisitBuffer = [];
+    }
+  }
+});
+
 chrome.runtime.onInstalled.addListener(async () => {
   await runStorageMigration();
+  const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
+  const autoScanEnabled = stored[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
+  await configureConservativeAlarm(autoScanEnabled);
   console.log('[ACAM] Service worker installed and storage initialized/migrated.');
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   await runStorageMigration();
+  const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
+  const autoScanEnabled = stored[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
+  await configureConservativeAlarm(autoScanEnabled);
 });
 
 // Helper for smooth, observable streaming steps
@@ -245,16 +360,24 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === 'GET_STATUS') {
-      chrome.storage.local
-        .get([STORAGE_KEYS.STATS, STORAGE_KEYS.LAST_HISTORY_SCAN, STORAGE_KEYS.FOOTPRINT_SNAPSHOT])
-        .then((data) => {
-          sendResponse({
-            status: 'active',
-            stats: data[STORAGE_KEYS.STATS] || { greetingCount: 0, totalCo2SavedKg: 0, civicPoints: 0, actionsCount: 0 },
-            lastHistoryScan: data[STORAGE_KEYS.LAST_HISTORY_SCAN] || null,
-            footprintSnapshot: data[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] || null,
+      flushPendingVisits().then(() => {
+        chrome.storage.local
+          .get([
+            STORAGE_KEYS.STATS,
+            STORAGE_KEYS.LAST_HISTORY_SCAN,
+            STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
+            STORAGE_KEYS.AUTO_SCAN_ENABLED,
+          ])
+          .then((data) => {
+            sendResponse({
+              status: 'active',
+              stats: data[STORAGE_KEYS.STATS] || { greetingCount: 0, totalCo2SavedKg: 0, civicPoints: 0, actionsCount: 0 },
+              lastHistoryScan: data[STORAGE_KEYS.LAST_HISTORY_SCAN] || null,
+              footprintSnapshot: data[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] || null,
+              autoScanEnabled: data[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false,
+            });
           });
-        });
+      });
       return true;
     }
 

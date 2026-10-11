@@ -19,6 +19,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const domainsListEl = document.getElementById('domains-list') as HTMLElement | null;
   const lastUpdatedEl = document.getElementById('last-updated') as HTMLElement | null;
   const purgeBtn = document.getElementById('purge-btn') as HTMLButtonElement | null;
+  const autoScanToggle = document.getElementById('auto-scan-toggle') as HTMLInputElement | null;
+
+  async function loadAutoScanState(): Promise<void> {
+    if (!autoScanToggle) return;
+    const data = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
+    const isEnabled = data[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
+    autoScanToggle.checked = isEnabled;
+  }
+
+  autoScanToggle?.addEventListener('change', async () => {
+    if (!autoScanToggle) return;
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.AUTO_SCAN_ENABLED]: autoScanToggle.checked,
+    });
+  });
 
   async function checkPermissions(): Promise<boolean> {
     const hasPermission = await chrome.permissions.contains({ permissions: ['history'] });
@@ -173,4 +188,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await checkPermissions();
   await loadCachedScan();
+  await loadAutoScanState();
 });

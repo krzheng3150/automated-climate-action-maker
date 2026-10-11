@@ -443,3 +443,174 @@ export function migrateStorageState(
     },
   };
 }
+
+// ============================================================================
+// 9. Layer 1: Decoupled Incremental Ingestion Aggregator
+// ============================================================================
+
+export interface VisitedDomainDelta {
+  domain: string;
+  isGoogle: boolean;
+}
+
+/**
+ * Pure mathematical aggregation of new visits into a HistorySignalSlot.
+ * Runs in <2ms with zero recommendation or behavioral inference coupling.
+ */
+export function aggregateIncrementalVisits(
+  currentSlot: HistorySignalSlot,
+  newVisits: VisitedDomainDelta[]
+): HistorySignalSlot {
+  if (newVisits.length === 0) return currentSlot;
+
+  let addedGoogle = 0;
+  let addedNonGoogle = 0;
+  const domainMap: Record<string, number> = {};
+
+  for (const item of currentSlot.topDomains) {
+    domainMap[item.domain] = item.count;
+  }
+
+  for (const visit of newVisits) {
+    if (visit.isGoogle) {
+      addedGoogle++;
+    } else {
+      addedNonGoogle++;
+    }
+    const cleanDomain = visit.domain.toLowerCase().trim();
+    if (cleanDomain) {
+      domainMap[cleanDomain] = (domainMap[cleanDomain] || 0) + 1;
+    }
+  }
+
+  const boundedDomains: DomainFrequency[] = Object.entries(domainMap)
+    .map(([domain, count]) => ({ domain, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 100);
+
+  const newGoogleCount = currentSlot.googleCount + addedGoogle;
+  const newNonGoogleCount = currentSlot.nonGoogleCount + addedNonGoogle;
+  const newTotal = newGoogleCount + newNonGoogleCount;
+
+  return {
+    ...currentSlot,
+    collectedAt: Date.now(),
+    recordCount: newTotal,
+    googleCount: newGoogleCount,
+    nonGoogleCount: newNonGoogleCount,
+    totalHits: newTotal,
+    topDomains: boundedDomains,
+  };
+}
+
+// ============================================================================
+// 10. Layer 2: Decoupled Recommendation & Intervention Engine
+// ============================================================================
+
+export interface ClimateActionRecommendation {
+  id: string;
+  title: string;
+  description: string;
+  category: 'circular' | 'civic' | 'digital_efficiency' | 'clean_energy';
+  estimatedCo2SavingsKg: number;
+  potentialPoints: number;
+}
+
+/**
+ * Pure recommendation engine that executes on-demand (e.g. popup rendering or in-page nudge).
+ * Decoupled from the background ingestion loop.
+ */
+export function computeRecommendations(
+  snapshot: DigitalFootprintSnapshot
+): ClimateActionRecommendation[] {
+  const archetype = snapshot.projection?.primaryArchetype || 'general_browser';
+  const recommendations: ClimateActionRecommendation[] = [];
+
+  switch (archetype) {
+    case 'circular_deal_hunter':
+      recommendations.push(
+        {
+          id: 'rec-circular-refurb',
+          title: 'Prioritize Certified Refurbished',
+          description: 'Search Back Market, Swappa, or eBay Refurbished before buying new electronics.',
+          category: 'circular',
+          estimatedCo2SavingsKg: 65.0,
+          potentialPoints: 50,
+        },
+        {
+          id: 'rec-circular-repair',
+          title: 'Right-to-Repair Guides',
+          description: 'Explore iFixit manuals to extend hardware lifespan before replacement.',
+          category: 'circular',
+          estimatedCo2SavingsKg: 35.0,
+          potentialPoints: 30,
+        }
+      );
+      break;
+
+    case 'digital_minimalist':
+      recommendations.push(
+        {
+          id: 'rec-minimalist-tabs',
+          title: 'Hibernate Unused Tabs',
+          description: 'Consolidate active tabs to reduce browser memory drain and background sync wattage.',
+          category: 'digital_efficiency',
+          estimatedCo2SavingsKg: 12.0,
+          potentialPoints: 20,
+        },
+        {
+          id: 'rec-minimalist-cache',
+          title: 'Purge Local Media Cache',
+          description: 'Keep local LevelDB and video buffer footprint minimal.',
+          category: 'digital_efficiency',
+          estimatedCo2SavingsKg: 5.0,
+          potentialPoints: 15,
+        }
+      );
+      break;
+
+    case 'civic_advocate':
+      recommendations.push(
+        {
+          id: 'rec-civic-comment',
+          title: 'Submit EPA Clean Energy Comment',
+          description: 'Voice support on pending regional clean energy regulatory dockets.',
+          category: 'civic',
+          estimatedCo2SavingsKg: 80.0,
+          potentialPoints: 80,
+        },
+        {
+          id: 'rec-civic-share',
+          title: 'Share Climate Action Petitions',
+          description: 'Amplify open environmental policy petitions across civic networks.',
+          category: 'civic',
+          estimatedCo2SavingsKg: 40.0,
+          potentialPoints: 40,
+        }
+      );
+      break;
+
+    default:
+      recommendations.push(
+        {
+          id: 'rec-general-search',
+          title: 'Eco-Friendly Search Providers',
+          description: 'Consider green search engines that plant trees or run on 100% renewables.',
+          category: 'clean_energy',
+          estimatedCo2SavingsKg: 15.0,
+          potentialPoints: 25,
+        },
+        {
+          id: 'rec-general-circular',
+          title: 'Explore Secondhand Alternatives',
+          description: 'Browse refurbished marketplaces when searching for tech hardware.',
+          category: 'circular',
+          estimatedCo2SavingsKg: 50.0,
+          potentialPoints: 45,
+        }
+      );
+      break;
+  }
+
+  return recommendations;
+}
