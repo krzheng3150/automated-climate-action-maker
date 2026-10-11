@@ -347,6 +347,7 @@ export const STORAGE_KEYS = {
   AUTO_SCAN_ENABLED: 'autoScanEnabled',
   LAST_INCREMENTAL_TIMESTAMP: 'lastIncrementalTimestamp',
   SCHEMA_VERSION: 'schemaVersion',
+  PENDING_VISITS: 'pendingVisits',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

@@ -51,10 +51,30 @@ async function runStorageMigration(): Promise<void> {
   }
 }
 
-// Ephemeral in-memory visit buffer for activity-driven batching
-let pendingVisitBuffer: VisitedDomainDelta[] = [];
+// Storage-backed visit buffer for activity-driven batching
 const FLUSH_BATCH_SIZE = 10;
 const CONSERVATIVE_ALARM_NAME = 'acam-conservative-sync';
+
+async function getPendingVisits(): Promise<VisitedDomainDelta[]> {
+  try {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.PENDING_VISITS);
+    const visits = data[STORAGE_KEYS.PENDING_VISITS];
+    return Array.isArray(visits) ? (visits as VisitedDomainDelta[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function appendPendingVisit(visit: VisitedDomainDelta): Promise<number> {
+  const current = await getPendingVisits();
+  current.push(visit);
+  await chrome.storage.local.set({ [STORAGE_KEYS.PENDING_VISITS]: current });
+  return current.length;
+}
+
+async function clearPendingVisits(): Promise<void> {
+  await chrome.storage.local.remove(STORAGE_KEYS.PENDING_VISITS);
+}
 
 async function configureConservativeAlarm(enabled: boolean): Promise<void> {
   if (enabled) {
@@ -67,10 +87,11 @@ async function configureConservativeAlarm(enabled: boolean): Promise<void> {
 }
 
 async function flushPendingVisits(mode: IngestionMode = 'event_driven_stream'): Promise<void> {
-  if (pendingVisitBuffer.length === 0) return;
+  const batchToProcess = await getPendingVisits();
+  if (batchToProcess.length === 0) return;
 
-  const batchToProcess = [...pendingVisitBuffer];
-  pendingVisitBuffer = [];
+  // Clear pending buffer in storage before processing
+  await clearPendingVisits();
 
   try {
     const data = await chrome.storage.local.get([
@@ -86,7 +107,7 @@ async function flushPendingVisits(mode: IngestionMode = 'event_driven_stream'): 
       snapshot = createDigitalFootprintSnapshot({
         ingestionMode: mode,
         clientPlatform: 'chromium',
-        extensionVersion: '0.1.0',
+        extensionVersion: '1.0.0',
       });
     }
 
@@ -126,12 +147,12 @@ chrome.history.onVisited.addListener(async (item) => {
     const hostname = parsed.hostname.toLowerCase();
     if (!hostname) return;
 
-    pendingVisitBuffer.push({
+    const bufferCount = await appendPendingVisit({
       domain: hostname,
       isGoogle: isGoogleDomain(hostname),
     });
 
-    if (pendingVisitBuffer.length >= FLUSH_BATCH_SIZE) {
+    if (bufferCount >= FLUSH_BATCH_SIZE) {
       await flushPendingVisits('event_driven_stream');
     }
   } catch {
@@ -152,7 +173,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
     const isEnabled = changes[STORAGE_KEYS.AUTO_SCAN_ENABLED].newValue !== false;
     await configureConservativeAlarm(isEnabled);
     if (!isEnabled) {
-      pendingVisitBuffer = [];
+      await clearPendingVisits();
     }
   }
 });
@@ -307,7 +328,7 @@ chrome.runtime.onConnect.addListener((port) => {
         sources: {
           history: historySlot,
         },
-        extensionVersion: '0.1.0',
+        extensionVersion: '1.0.0',
       });
 
       await chrome.storage.local.set({

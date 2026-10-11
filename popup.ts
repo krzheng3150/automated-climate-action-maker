@@ -170,6 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.LAST_HISTORY_SCAN,
       STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
       STORAGE_KEYS.LAST_INCREMENTAL_TIMESTAMP,
+      STORAGE_KEYS.PENDING_VISITS,
     ]);
     if (googleCountEl) googleCountEl.textContent = '0';
     if (nonGoogleCountEl) nonGoogleCountEl.textContent = '0';
