@@ -29,6 +29,16 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Verify Direct Push Authorization
+        if: github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'main')
+        run: |
+          ALLOWED_ACTOR="krzheng3150"
+          if [ "${{ github.actor }}" != "$ALLOWED_ACTOR" ]; then
+            echo "::error::Direct pushes to master are restricted to @$ALLOWED_ACTOR. Contributors must submit a Pull Request."
+            exit 1
+          fi
+          echo "Direct push verified: authorized actor @$ALLOWED_ACTOR."
+
       - name: 1. TypeScript Typecheck
         run: npm run typecheck
 
