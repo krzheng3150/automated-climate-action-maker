@@ -1,0 +1,70 @@
+name: Chrome Web Store Automated Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      auto_publish:
+        description: 'Publish immediately to CWS upon successful upload'
+        type: boolean
+        default: true
+      dry_run:
+        description: 'Dry run pre-flight check only (no live API calls)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-cws
+  cancel-in-progress: false
+
+jobs:
+  validate-package-publish:
+    name: Build, Audit & Publish to CWS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Full Guardrails Test Suite
+        run: npm test
+
+      - name: Compile Privacy Page
+        run: npm run build:privacy
+
+      - name: Package Extension
+        run: npm run pack:store
+
+      - name: Publish to Chrome Web Store (or Dry-Run Preflight)
+        env:
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          FLAGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            FLAGS="$FLAGS --dry-run"
+          fi
+          if [ "${{ github.event.inputs.auto_publish }}" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
+            FLAGS="$FLAGS --auto-publish"
+          fi
+          node scripts/publish-cws.mjs $FLAGS
+
+      - name: Archive Production Release ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: acam-release-archive
+          path: acam-v*.zip
+          retention-days: 30

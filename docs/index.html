@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Privacy Policy for Automated Climate Action Maker (ACAM) - 100% On-Device, Zero-Telemetry Browser Extension" />
+  <title>Privacy Policy | Automated Climate Action Maker (ACAM)</title>
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --card-bg: #ffffff;
+      --text: #111827;
+      --text-muted: #4b5563;
+      --primary: #059669;
+      --primary-light: #ecfdf5;
+      --border: #e5e7eb;
+      --code-bg: #f3f4f6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --primary: #10b981;
+        --primary-light: #064e3b;
+        --border: #334155;
+        --code-bg: #0f172a;
+      }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.65;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.25;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 0.3rem;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    p {
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+    }
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.25rem;
+      color: var(--text-muted);
+    }
+    li {
+      margin-bottom: 0.4rem;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9em;
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--primary);
+    }
+    a {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+    th {
+      background: var(--code-bg);
+      font-weight: 700;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .footer {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-badge">🛡️ Official Policy</div>
+    <h1>Privacy Policy for Automated Climate Action Maker (ACAM)</h1>
+<p><em>Last updated: October 2026</em></p>
+<p>The <strong>Automated Climate Action Maker (ACAM)</strong> browser extension is designed with a strict <strong>Local-First, Zero-Telemetry Privacy Architecture</strong>. This policy explains how ACAM handles your information and demonstrates our commitment to user privacy and data sovereignty.</p>
+<hr />
+<h2>1. Absolute Guarantee: Zero Outbound Telemetry</h2>
+<p>ACAM operates completely on your local device. Under no circumstance does ACAM transmit, sync, leak, or sell your browsing history, visited URLs, search queries, personal identifiers, or digital carbon metrics to external servers.</p>
+<ul>
+<li><strong>No Remote Servers:</strong> We do not operate telemetry servers, analytics collectors, or cloud databases.</li>
+<li><strong>No Third-Party Analytics:</strong> ACAM contains zero third-party tracking libraries, analytics scripts (e.g., Google Analytics, Mixpanel), or error-monitoring SDKs (e.g., Sentry).</li>
+<li><strong>Hardened Network Sandbox:</strong> The extension's Content Security Policy (CSP) strictly locks execution to <code>'self'</code>, and the source code contains zero network egress primitives (<code>fetch</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>, <code>sendBeacon</code>, <code>EventSource</code>).</li>
+</ul>
+<hr />
+<h2>2. Information Handled &amp; On-Device Processing</h2>
+<p>ACAM processes certain browsing activity strictly within Chromium's local process memory:</p>
+<h3>A. Browsing History &amp; Domain Aggregation</h3>
+<ul>
+<li><strong>What is accessed:</strong> When you trigger an on-device scan or browse with auto-scan enabled, ACAM queries the local Chromium history database.</li>
+<li><strong>Sanitization &amp; Minimization:</strong> ACAM <strong>never</strong> retains full URLs, page paths, or query parameters (which may contain sensitive search terms or session tokens).</li>
+<li><strong>Domain-Level Frequencies:</strong> ACAM extracts only top-level hostnames (e.g., <code>theguardian.com</code>, <code>backmarket.com</code>) and increments local numerical counters to calculate estimated embodied carbon footprints and behavioral archetypes.</li>
+<li><strong>Bounded Footprint:</strong> Persisted domain maps are capped at a maximum of 100 entries in local browser storage (<code>chrome.storage.local</code>) to prevent storage bloat.</li>
+</ul>
+<h3>B. Local Impact Metrics &amp; Preferences</h3>
+<ul>
+<li>Gamification counters (Civic Points, estimated kilograms of CO₂ avoided) and settings (Background Auto-Scan toggle) are stored locally in <code>chrome.storage.local</code>.</li>
+</ul>
+<hr />
+<h2>3. Chrome Permissions &amp; Why They Are Needed</h2>
+<p>In accordance with the Chrome Web Store <strong>Principle of Least Privilege</strong>, ACAM only requests permissions that are directly necessary for its single purpose:</p>
+<div class="table-wrapper"><table>
+<thead><tr><th>Permission</th><th>Justification</th></tr></thead>
+<tbody>
+<tr><td><code>history</code></td><td>Required to perform on-device categorization of your browsing activity to compute carbon footprint estimates and behavioral archetypes without external telemetry.</td></tr>
+<tr><td><code>storage</code></td><td>Required to persist your on-device footprint snapshot, domain tallies, and user preference toggles within Chromium's local sandboxed LevelDB storage.</td></tr>
+<tr><td><code>activeTab</code></td><td>Required to display contextual circular economy interventions and civic action prompts only when you are actively viewing supported shopping or climate news pages.</td></tr>
+<tr><td><code>alarms</code></td><td>Required to schedule periodic, low-resource synchronization of local footprint data without running battery-draining continuous background timers.</td></tr>
+</tbody></table></div>
+<hr />
+<h2>4. User Control &amp; Data Deletion</h2>
+<p>You maintain complete control over your data:</p>
+<ul>
+<li><strong>Purge Local Cache:</strong> Clicking the <strong>"Purge Local Cache"</strong> button in the ACAM popup immediately and atomically wipes all stored domain metrics, footprint snapshots, and queued visits from <code>chrome.storage.local</code>.</li>
+<li><strong>Toggle Background Auto-Scan:</strong> You can disable real-time activity batching at any time via the toggle in the popup interface.</li>
+<li><strong>Uninstalling:</strong> Removing the extension from your browser instantly deletes all extension storage and state held by Chromium.</li>
+</ul>
+<hr />
+<h2>5. Chrome Web Store Limited Use Disclosure</h2>
+<p>ACAM's use and transfer of information received from Google APIs adheres to the <strong>Chrome Web Store User Data Policy</strong>, including the <strong>Limited Use</strong> requirements:</p>
+<ol>
+<li>Data is utilized exclusively to provide on-device carbon footprint insights and contextual sustainability prompts visible directly to the user.</li>
+<li>Data is never transferred to third parties or used for personalized advertising, credit assessment, or data broker sales.</li>
+<li>No human reads or has access to your browsing signals.</li>
+</ol>
+<hr />
+<h2>6. Open Source Verification &amp; Contact</h2>
+<p>ACAM is open source and auditable. You can independently verify our zero-network guarantees and source code directly in our repository.</p>
+<p>If you have questions, feedback, or security inquiries regarding ACAM's privacy practices, please open an issue in the official repository or contact the maintainers.</p>
+
+    <div class="footer">
+      Automated Climate Action Maker (ACAM) • Verified 100% On-Device & Zero Telemetry
+    </div>
+  </div>
+</body>
+</html>

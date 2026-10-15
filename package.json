@@ -12,6 +12,8 @@
     "test:migration": "npm run build && node tests/test-storage-migration.mjs",
     "test:e2e": "npm run build && node tests/test-e2e-all.mjs",
     "pack:store": "node scripts/pack-store.mjs",
+    "build:privacy": "node scripts/build-privacy-page.mjs",
+    "publish:cws": "node scripts/publish-cws.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
     "generate:store-assets": "node scripts/generate-store-assets.mjs",
     "check:static": "node scripts/check-static.mjs",
