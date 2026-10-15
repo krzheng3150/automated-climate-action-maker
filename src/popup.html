@@ -91,6 +91,22 @@
         </div>
       </section>
 
+      <details class="card diagnostics-drawer" id="diagnostics-drawer">
+        <summary class="diagnostics-summary">
+          <span class="diagnostics-summary-title">🛠️ System Diagnostics &amp; Audit Log</span>
+          <span id="diagnostics-count" class="diagnostics-badge">0 events</span>
+        </summary>
+        <div class="diagnostics-body">
+          <div class="diagnostics-toolbar">
+            <button id="copy-diag-btn" class="diag-btn diag-btn-copy" type="button">Copy JSON</button>
+            <button id="clear-diag-btn" class="diag-btn diag-btn-clear" type="button">Clear Logs</button>
+          </div>
+          <div id="diagnostics-list" class="diagnostics-list">
+            <div class="empty-state">No diagnostic events recorded yet.</div>
+          </div>
+        </div>
+      </details>
+
       <footer>
         <button id="purge-btn" class="link-btn text-danger">Purge Local Cache</button>
         <div class="privacy-note">🔒 Zero outbound network requests. All computations occur within local browser memory.</div>

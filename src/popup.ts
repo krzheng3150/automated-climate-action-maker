@@ -1,6 +1,12 @@
 /// <reference types="chrome" />
 
-import { STORAGE_KEYS, type HistoryScanResult, type StreamStep } from './index';
+import {
+  STORAGE_KEYS,
+  recordDiagnostic,
+  type DiagnosticEntry,
+  type HistoryScanResult,
+  type StreamStep,
+} from './index';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const permissionCard = document.getElementById('permission-card') as HTMLElement | null;
@@ -20,6 +26,105 @@ document.addEventListener('DOMContentLoaded', async () => {
   const lastUpdatedEl = document.getElementById('last-updated') as HTMLElement | null;
   const purgeBtn = document.getElementById('purge-btn') as HTMLButtonElement | null;
   const autoScanToggle = document.getElementById('auto-scan-toggle') as HTMLInputElement | null;
+
+  const diagnosticsListEl = document.getElementById('diagnostics-list') as HTMLElement | null;
+  const diagnosticsCountEl = document.getElementById('diagnostics-count') as HTMLElement | null;
+  const copyDiagBtn = document.getElementById('copy-diag-btn') as HTMLButtonElement | null;
+  const clearDiagBtn = document.getElementById('clear-diag-btn') as HTMLButtonElement | null;
+
+  function renderDiagnostics(logs: DiagnosticEntry[]): void {
+    if (diagnosticsCountEl) {
+      diagnosticsCountEl.textContent = `${logs.length} event${logs.length === 1 ? '' : 's'}`;
+    }
+
+    if (!diagnosticsListEl) return;
+
+    if (!logs || logs.length === 0) {
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'empty-state';
+      emptyEl.textContent = 'No diagnostic events recorded yet.';
+      diagnosticsListEl.replaceChildren(emptyEl);
+      return;
+    }
+
+    // Render in reverse chronological order (newest first)
+    const items = [...logs].reverse().map((entry) => {
+      const row = document.createElement('div');
+      row.className = 'diag-entry';
+
+      const meta = document.createElement('div');
+      meta.className = 'diag-meta';
+
+      const time = document.createElement('span');
+      time.className = 'diag-time';
+      const d = new Date(entry.timestamp);
+      time.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      const sourceBadge = document.createElement('span');
+      sourceBadge.className = `diag-source diag-source-${entry.source}`;
+      sourceBadge.textContent = entry.source;
+
+      meta.appendChild(time);
+      meta.appendChild(sourceBadge);
+
+      const eventTitle = document.createElement('div');
+      eventTitle.className = 'diag-event';
+      eventTitle.textContent = entry.event;
+
+      row.appendChild(meta);
+      row.appendChild(eventTitle);
+
+      if (entry.details) {
+        const detailsEl = document.createElement('div');
+        detailsEl.className = 'diag-details';
+        detailsEl.textContent = entry.details;
+        row.appendChild(detailsEl);
+      }
+
+      return row;
+    });
+
+    diagnosticsListEl.replaceChildren(...items);
+  }
+
+  async function loadDiagnostics(): Promise<void> {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.DIAGNOSTICS_LOG);
+    const logs = Array.isArray(data[STORAGE_KEYS.DIAGNOSTICS_LOG])
+      ? (data[STORAGE_KEYS.DIAGNOSTICS_LOG] as DiagnosticEntry[])
+      : [];
+    renderDiagnostics(logs);
+  }
+
+  copyDiagBtn?.addEventListener('click', async () => {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.DIAGNOSTICS_LOG);
+    const logs = Array.isArray(data[STORAGE_KEYS.DIAGNOSTICS_LOG])
+      ? data[STORAGE_KEYS.DIAGNOSTICS_LOG]
+      : [];
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(logs, null, 2));
+      if (copyDiagBtn) {
+        const orig = copyDiagBtn.textContent;
+        copyDiagBtn.textContent = '✓ Copied!';
+        setTimeout(() => {
+          if (copyDiagBtn) copyDiagBtn.textContent = orig;
+        }, 1500);
+      }
+    } catch {
+      // Ignore clipboard write restrictions
+    }
+  });
+
+  clearDiagBtn?.addEventListener('click', async () => {
+    await chrome.storage.local.set({ [STORAGE_KEYS.DIAGNOSTICS_LOG]: [] });
+    renderDiagnostics([]);
+  });
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes[STORAGE_KEYS.DIAGNOSTICS_LOG]) {
+      const newLogs = changes[STORAGE_KEYS.DIAGNOSTICS_LOG].newValue;
+      renderDiagnostics(Array.isArray(newLogs) ? newLogs : []);
+    }
+  });
 
   async function loadAutoScanState(): Promise<void> {
     if (!autoScanToggle) return;
@@ -171,7 +276,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
       STORAGE_KEYS.LAST_INCREMENTAL_TIMESTAMP,
       STORAGE_KEYS.PENDING_VISITS,
+      STORAGE_KEYS.DIAGNOSTICS_LOG,
     ]);
+    renderDiagnostics([]);
     if (googleCountEl) googleCountEl.textContent = '0';
     if (nonGoogleCountEl) nonGoogleCountEl.textContent = '0';
     if (totalCountEl) totalCountEl.textContent = '0';
@@ -190,4 +297,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkPermissions();
   await loadCachedScan();
   await loadAutoScanState();
+  await loadDiagnostics();
+  await recordDiagnostic({
+    source: 'popup',
+    level: 'info',
+    event: 'POPUP_INITIALIZED',
+    details: 'Foreground popup stream interface mounted',
+  });
 });

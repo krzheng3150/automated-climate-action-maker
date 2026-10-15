@@ -7,6 +7,7 @@ import {
   createDigitalFootprintSnapshot,
   createHistorySlot,
   migrateStorageState,
+  recordDiagnostic,
   type DigitalFootprintSnapshot,
   type DomainFrequency,
   type ExtensionMessage,
@@ -41,13 +42,20 @@ async function runStorageMigration(): Promise<void> {
     const { updatedState, result } = migrateStorageState(allData);
     if (result.migrated) {
       await chrome.storage.local.set(updatedState);
-      console.log(
-        `[ACAM] Migrated storage schema v${result.fromVersion} -> v${result.toVersion}. Keys updated:`,
-        result.keysUpdated
-      );
+      recordDiagnostic({
+        source: 'background',
+        level: 'info',
+        event: 'STORAGE_MIGRATED',
+        details: `Migrated schema v${result.fromVersion} -> v${result.toVersion} (${result.keysUpdated.length} keys)`,
+      });
     }
   } catch (err) {
-    console.error('[ACAM] Storage migration error:', err);
+    recordDiagnostic({
+      source: 'background',
+      level: 'error',
+      event: 'STORAGE_MIGRATION_ERROR',
+      details: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -134,6 +142,13 @@ async function flushPendingVisits(mode: IngestionMode = 'event_driven_stream'): 
       [STORAGE_KEYS.FOOTPRINT_SNAPSHOT]: snapshot,
       [STORAGE_KEYS.LAST_INCREMENTAL_TIMESTAMP]: Date.now(),
     });
+
+    recordDiagnostic({
+      source: 'background',
+      level: 'info',
+      event: 'PENDING_VISITS_FLUSHED',
+      details: `Processed ${batchToProcess.length} visits into on-device footprint (${mode})`,
+    });
   } catch (err) {
     console.error('[ACAM] Failed to flush pending visits:', err);
   }
@@ -183,7 +198,12 @@ chrome.runtime.onInstalled.addListener(async () => {
   const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
   const autoScanEnabled = stored[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
   await configureConservativeAlarm(autoScanEnabled);
-  console.log('[ACAM] Service worker installed and storage initialized/migrated.');
+  recordDiagnostic({
+    source: 'background',
+    level: 'info',
+    event: 'SERVICE_WORKER_INSTALLED',
+    details: `Service worker installed. Auto-scan: ${autoScanEnabled ? 'enabled' : 'disabled'}`,
+  });
 });
 
 chrome.runtime.onStartup.addListener(async () => {
@@ -336,6 +356,13 @@ chrome.runtime.onConnect.addListener((port) => {
         [STORAGE_KEYS.FOOTPRINT_SNAPSHOT]: footprintSnapshot,
       });
 
+      recordDiagnostic({
+        source: 'background',
+        level: 'info',
+        event: 'HISTORY_STREAM_COMPLETE',
+        details: `Classified ${result.total} visits (${result.googleCount} Google vs ${result.nonGoogleCount} non-Google across ${result.topDomains.length} top domains)`,
+      });
+
       port.postMessage({
         step: 4,
         title: 'Computation Complete',
@@ -421,6 +448,14 @@ async function recordClimateAction(payload: RecordActionPayload): Promise<ACAMSt
   stats.greetingCount += 1;
 
   await chrome.storage.local.set({ [STORAGE_KEYS.STATS]: stats });
+
+  recordDiagnostic({
+    source: 'background',
+    level: 'info',
+    event: 'ACTION_RECORDED',
+    details: `${payload.label}: +${payload.points} pts, +${payload.co2SavedKg} kg CO2 (Total: ${stats.civicPoints} pts)`,
+  });
+
   return stats;
 }
 

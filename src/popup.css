@@ -392,6 +392,157 @@ footer {
   margin-top: 4px;
 }
 
+.diagnostics-drawer {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.diagnostics-summary {
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+  background: #f8fafc;
+  user-select: none;
+}
+
+.diagnostics-summary:hover {
+  background: #f1f5f9;
+}
+
+.diagnostics-summary-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.diagnostics-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 999px;
+}
+
+.diagnostics-body {
+  padding: 10px 12px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.diagnostics-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.diag-btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.diag-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.diag-btn-copy {
+  color: #047857;
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.diag-btn-copy:hover {
+  background: #d1fae5;
+}
+
+.diag-btn-clear {
+  color: #dc2626;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.diag-btn-clear:hover {
+  background: #fee2e2;
+}
+
+.diagnostics-list {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.diag-entry {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.diag-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.diag-time {
+  color: #94a3b8;
+}
+
+.diag-source {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.diag-source-content {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.diag-source-background {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.diag-source-popup {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.diag-event {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.diag-details {
+  color: #64748b;
+  margin-top: 1px;
+  word-break: break-word;
+}
+
 .link-btn {
   background: none;
   border: none;

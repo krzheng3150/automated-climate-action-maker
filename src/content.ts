@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
 
-import type { ExtensionMessage } from './index';
+import { recordDiagnostic, type ExtensionMessage } from './index';
 
 /**
  * Automated Climate Action Maker (ACAM) - Content Script
@@ -20,12 +20,22 @@ class ACAMContentScript {
   }
 
   private init(): void {
-    console.log('[ACAM] Content script initialized.');
+    recordDiagnostic({
+      source: 'content',
+      level: 'info',
+      event: 'CONTENT_MOUNTED',
+      details: `Initialized on ${window.location.hostname || 'page'}`,
+    });
     this.registerMessageListeners();
     this.scenario = this.detectScenario();
     if (!this.scenario) return;
 
-    console.log(`[ACAM] Target page detected for ${this.scenario}. Arming trigger...`);
+    recordDiagnostic({
+      source: 'content',
+      level: 'info',
+      event: 'TARGET_PAGE_DETECTED',
+      details: `Armed ${this.scenario} on ${window.location.hostname}`,
+    });
     this.armTrigger(this.scenario);
   }
 
@@ -161,6 +171,12 @@ class ACAMContentScript {
 
   private fire(scenario: ScenarioType): void {
     this.triggered = true;
+    recordDiagnostic({
+      source: 'content',
+      level: 'info',
+      event: 'INTERVENTION_MOUNTED',
+      details: `Shadow DOM intervention mounted for ${scenario}`,
+    });
     this.displayIntervention(scenario);
   }
 
@@ -409,6 +425,12 @@ class ACAMContentScript {
   }
 
   private executeCivicAction(card: HTMLElement): void {
+    recordDiagnostic({
+      source: 'content',
+      level: 'info',
+      event: 'ACTION_EXECUTED',
+      details: 'Civic representative petition letter queued (+50 pts)',
+    });
     chrome.runtime.sendMessage(
       {
         type: 'RECORD_ACTION',
@@ -430,6 +452,12 @@ class ACAMContentScript {
   }
 
   private executeCircularRedirect(targetUrl: string, provider: string, card: HTMLElement): void {
+    recordDiagnostic({
+      source: 'content',
+      level: 'info',
+      event: 'CIRCULAR_REDIRECT',
+      details: `Dispatched circular marketplace redirect: ${provider} (+80 pts)`,
+    });
     if (targetUrl) {
       window.open(targetUrl, '_blank');
     }
@@ -456,6 +484,12 @@ class ACAMContentScript {
 
   private removePrompt(): void {
     if (this.container?.parentNode) {
+      recordDiagnostic({
+        source: 'content',
+        level: 'info',
+        event: 'INTERVENTION_DISMISSED',
+        details: 'Intervention prompt removed from host DOM',
+      });
       this.container.remove();
       this.container = null;
       this.shadowRoot = null;

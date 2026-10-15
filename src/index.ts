@@ -348,9 +348,75 @@ export const STORAGE_KEYS = {
   LAST_INCREMENTAL_TIMESTAMP: 'lastIncrementalTimestamp',
   SCHEMA_VERSION: 'schemaVersion',
   PENDING_VISITS: 'pendingVisits',
+  DIAGNOSTICS_LOG: 'diagnosticsLog',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+
+// ============================================================================
+// 8.1. Browser-Agnostic Diagnostics Architecture (Zero Host Console Pollution)
+// ============================================================================
+
+export interface DiagnosticEntry {
+  id: string;
+  timestamp: number;
+  source: 'content' | 'background' | 'popup';
+  level: 'info' | 'warn' | 'error';
+  event: string;
+  details?: string;
+}
+
+export const MAX_DIAGNOSTIC_LOGS = 50;
+
+/**
+ * Pure FIFO bounded append for diagnostic logs.
+ * Keeps LevelDB storage footprint strictly < 50 KB.
+ */
+export function appendDiagnosticEntry(
+  existingLogs: DiagnosticEntry[],
+  newEntry: Omit<DiagnosticEntry, 'id' | 'timestamp'> & { id?: string; timestamp?: number },
+  maxEntries = MAX_DIAGNOSTIC_LOGS
+): DiagnosticEntry[] {
+  const entry: DiagnosticEntry = {
+    id: newEntry.id || `diag_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    timestamp: newEntry.timestamp || Date.now(),
+    source: newEntry.source,
+    level: newEntry.level,
+    event: newEntry.event,
+    details: newEntry.details,
+  };
+
+  const updated = [...existingLogs, entry];
+  if (updated.length > maxEntries) {
+    return updated.slice(updated.length - maxEntries);
+  }
+  return updated;
+}
+
+/**
+ * Browser-agnostic async diagnostic recorder.
+ * Writes directly to chrome.storage.local without touching host page window/console.
+ */
+export async function recordDiagnostic(
+  entry: Omit<DiagnosticEntry, 'id' | 'timestamp'>,
+  maxEntries = MAX_DIAGNOSTIC_LOGS
+): Promise<DiagnosticEntry[]> {
+  try {
+    if (typeof chrome === 'undefined' || !chrome.storage?.local) {
+      return [];
+    }
+    const data = await chrome.storage.local.get(STORAGE_KEYS.DIAGNOSTICS_LOG);
+    const existing = Array.isArray(data[STORAGE_KEYS.DIAGNOSTICS_LOG])
+      ? (data[STORAGE_KEYS.DIAGNOSTICS_LOG] as DiagnosticEntry[])
+      : [];
+    const updated = appendDiagnosticEntry(existing, entry, maxEntries);
+    await chrome.storage.local.set({ [STORAGE_KEYS.DIAGNOSTICS_LOG]: updated });
+    return updated;
+  } catch {
+    // Fail-safe: diagnostic logging must never throw or break caller logic
+    return [];
+  }
+}
 
 export interface StorageMigrationResult {
   migrated: boolean;
