@@ -33,7 +33,7 @@ automated-climate-action-maker/
 │   ├── test-history-stream.mjs # Headless Puppeteer stream verification suite
 │   ├── test-e2e-all.mjs      # Full end-to-end multi-scenario subsystem test
 │   └── test-runner.mjs       # Minimal smoke test
-├── manifest.json             # Extension manifest (storage, activeTab, history, alarms)
+├── manifest.json             # Extension manifest (storage, history, alarms)
 ├── package.json              # Project dependencies and test scripts
 ├── tsconfig.json             # TypeScript strict configuration
 └── PRIVACY_POLICY.md         # Public zero-telemetry privacy disclosure

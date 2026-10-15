@@ -85,11 +85,6 @@ Open Source & Auditable: ACAM's complete source code and automated security guar
 > • Isolated Shadow DOM: All injected UI elements are encapsulated in an isolated Shadow DOM to prevent third-party host scripts from tampering with extension elements.
 > • Safe DOM Construction: No dynamic code execution (eval, new Function) or innerHTML interpolation is used.
 
-*(Note: If `activeTab` is retained for active-tab popup detection, include the following justification; otherwise remove `activeTab` from manifest before upload):*
-#### 5. `activeTab` (Conditional)
-> **Justification:**  
-> Required to inspect the current active tab's hostname when the user opens the extension popup to display real-time contextual recommendations tailored to the active page without requiring broad background tab tracking permissions.
-
 ---
 
 ### C. Data Usage Declarations

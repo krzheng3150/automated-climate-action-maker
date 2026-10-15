@@ -5,7 +5,6 @@
   "description": "Scans browsing footprints on-device to suggest and automate climate-positive decisions with zero network telemetry.",
   "permissions": [
     "storage",
-    "activeTab",
     "history",
     "alarms"
   ],

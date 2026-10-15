@@ -39,7 +39,6 @@ In accordance with the Chrome Web Store **Principle of Least Privilege**, ACAM o
 | :--- | :--- |
 | `history` | Required to perform on-device categorization of your browsing activity to compute carbon footprint estimates and behavioral archetypes without external telemetry. |
 | `storage` | Required to persist your on-device footprint snapshot, domain tallies, and user preference toggles within Chromium's local sandboxed LevelDB storage. |
-| `activeTab` | Required to display contextual circular economy interventions and civic action prompts only when you are actively viewing supported shopping or climate news pages. |
 | `alarms` | Required to schedule periodic, low-resource synchronization of local footprint data without running battery-draining continuous background timers. |
 
 ---
