@@ -90,6 +90,25 @@ try {
   if ((stats.civicPoints || 0) < 50) throw new Error('Civic points not recorded');
   if ((stats.totalCo2SavedKg || 0) < 65) throw new Error('CO2 savings not recorded');
 
+  // Outbound helper: the circular click must have opened its tab through openOutbound()
+  const outboundTab = browser.targets().find((t) => t.url().includes('backmarket.com'));
+  if (!outboundTab) throw new Error('Back Market tab was not opened by the circular button');
+  const outboundUrl = new URL(outboundTab.url());
+  if (outboundUrl.searchParams.get('q') !== 'ThinkPad T14') {
+    throw new Error(`Outbound URL lost the product query: ${outboundTab.url()}`);
+  }
+  const diagnostics = await popupPage.evaluate(async () => {
+    return (await chrome.storage.local.get('diagnosticsLog')).diagnosticsLog || [];
+  });
+  const outboundMarkers = diagnostics.filter((d) => d.event === 'OUTBOUND_OPEN');
+  if (!outboundMarkers.some((d) => d.details.includes('partner=backmarket') && d.details.includes('host=www.backmarket.com'))) {
+    throw new Error('Opened tab has no matching OUTBOUND_OPEN marker: it bypassed the helper');
+  }
+  if (diagnostics.some((d) => d.event === 'OUTBOUND_UNREGISTERED_HOST' || d.event === 'OUTBOUND_REFUSED')) {
+    throw new Error('Outbound helper reported an unregistered or refused host for a registry partner');
+  }
+  console.log('[Outbound] Circular redirect opened via helper with marker:', outboundMarkers[0].details);
+
   // Trigger history scan in popup
   await popupPage.click('#scan-btn');
   await popupPage.waitForFunction(

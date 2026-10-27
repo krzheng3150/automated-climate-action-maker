@@ -60,6 +60,7 @@ const buildOptions = {
 const libBuildOptions = {
   entryPoints: {
     index: path.join(projectRoot, 'src/index.ts'),
+    outbound: path.join(projectRoot, 'src/outbound.ts'),
   },
   bundle: true,
   format: 'esm',

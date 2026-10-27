@@ -124,7 +124,18 @@ const forbiddenEvalPatterns = [
   { pattern: /\bnew\s+Function\s*\(/g, name: 'new Function()' },
 ];
 
+// Every external link must go through src/outbound.ts so partner tagging cannot be bypassed.
+const forbiddenOutboundPatterns = [
+  { pattern: /\bwindow\.open\s*\(/g, name: 'window.open()' },
+  { pattern: /\bchrome\.tabs\.create\s*\(/g, name: 'chrome.tabs.create()' },
+  { pattern: /\blocation\.(assign|replace)\s*\(/g, name: 'location.assign/replace()' },
+  { pattern: /\b(?:location|\w*[Aa]nchor\w*|\w*[Ll]ink\w*|\w*\bel)\.href\s*=(?!=)/g, name: '.href assignment' },
+  { pattern: /setAttribute\(\s*['"]href['"]/g, name: "setAttribute('href')" },
+  { pattern: /['"`]https?:\/\//g, name: 'hardcoded http(s) URL literal' },
+];
+
 let networkViolations = 0;
+let outboundViolations = 0;
 let evalViolations = 0;
 let timerViolations = 0;
 let domSafetyViolations = 0;
@@ -139,6 +150,20 @@ for (const filePath of tsFiles) {
     if (matches) {
       reportFailure('Zero Outbound Telemetry', relPath, `Detected forbidden network call: ${item.name}`);
       networkViolations++;
+    }
+  }
+
+  // Check outbound links bypassing the partner-tagging helper
+  if (!relPath.endsWith('outbound.ts')) {
+    for (const item of forbiddenOutboundPatterns) {
+      if (content.match(item.pattern)) {
+        reportFailure(
+          'Outbound Link Helper',
+          relPath,
+          `Detected ${item.name} outside src/outbound.ts. Open links with openOutbound() and keep URLs in the partner registry.`
+        );
+        outboundViolations++;
+      }
     }
   }
 
@@ -176,6 +201,10 @@ for (const filePath of tsFiles) {
 
 if (networkViolations === 0) {
   reportPass('Zero Outbound Telemetry: No network primitives detected in source code');
+}
+
+if (outboundViolations === 0) {
+  reportPass('Outbound Link Helper: All external links go through src/outbound.ts');
 }
 
 if (evalViolations === 0) {

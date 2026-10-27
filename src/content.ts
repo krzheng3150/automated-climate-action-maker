@@ -1,6 +1,7 @@
 /// <reference types="chrome" />
 
 import { recordDiagnostic, type ExtensionMessage } from './index';
+import { buildSearchUrl, openOutbound, partnersInGroup } from './outbound';
 
 /**
  * Automated Climate Action Maker (ACAM) - Content Script
@@ -374,17 +375,11 @@ class ACAMContentScript {
       const productTitle = this.extractProductTitle();
       snippetEl.textContent = `Target: ${productTitle} (Save up to ~65 kg CO₂e)`;
 
-      const providers = [
-        { name: 'Back Market', urlPrefix: 'https://www.backmarket.com/en-us/search?q=' },
-        { name: 'eBay Refurbished', urlPrefix: 'https://www.ebay.com/sch/i.html?LH_ItemCondition=2000|2500&_nkw=' },
-        { name: 'Swappa', urlPrefix: 'https://swappa.com/search?q=' },
-      ];
-
-      for (const provider of providers) {
+      for (const provider of partnersInGroup('circular_marketplace')) {
         const btn = document.createElement('button');
         btn.className = 'btn circular-btn';
         btn.textContent = provider.name;
-        const targetUrl = `${provider.urlPrefix}${encodeURIComponent(productTitle)}`;
+        const targetUrl = buildSearchUrl(provider, productTitle);
 
         btn.addEventListener('click', () => {
           this.executeCircularRedirect(targetUrl, provider.name, card);
@@ -459,7 +454,7 @@ class ACAMContentScript {
       details: `Dispatched circular marketplace redirect: ${provider} (+80 pts)`,
     });
     if (targetUrl) {
-      window.open(targetUrl, '_blank');
+      openOutbound(targetUrl, { source: 'content', placement: 'in-page' });
     }
 
     chrome.runtime.sendMessage(
