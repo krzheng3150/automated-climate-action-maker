@@ -17,6 +17,7 @@ import {
   type StreamStep,
   type VisitedDomainDelta,
 } from './index';
+import { checkFoodData } from './food/emissions';
 
 /**
  * Automated Climate Action Maker (ACAM) - Background Service Worker
@@ -34,6 +35,19 @@ interface RecordActionPayload {
   label: string;
   co2SavedKg: number;
   points: number;
+}
+
+/** Proves on every install/startup that the bundled food emission table is present and usable. */
+function reportFoodDataStatus(): void {
+  const status = checkFoodData();
+  recordDiagnostic({
+    source: 'background',
+    level: status.ok ? 'info' : 'error',
+    event: status.ok ? 'FOOD_DATA_READY' : 'FOOD_DATA_INVALID',
+    details: status.ok
+      ? `AGRIBALYSE ${status.version}: ${status.count} foods loaded`
+      : `Food emission table unusable: ${status.reason}`,
+  });
 }
 
 async function runStorageMigration(): Promise<void> {
@@ -194,6 +208,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
 });
 
 chrome.runtime.onInstalled.addListener(async () => {
+  reportFoodDataStatus();
   await runStorageMigration();
   const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
   const autoScanEnabled = stored[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
@@ -207,6 +222,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+  reportFoodDataStatus();
   await runStorageMigration();
   const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
   const autoScanEnabled = stored[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;

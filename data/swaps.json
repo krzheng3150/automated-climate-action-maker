@@ -1,0 +1,73 @@
+{
+  "notes": [
+    "Curated swap rules. A rule says: in a dish where one of the 'from' foods is a main ingredient, replace a fraction of it (by mass) with the 'to' food. Rules are food-agnostic: nothing here assumes beef.",
+    "replaceFraction is NOT authored. The generator computes it from the evidence list: each evidence entry is a published alternate recipe, and its share is toGrams*toMassFactor / (fromGrams + toGrams*toMassFactor), assuming the replacement is mass-for-mass. min/median/max come from those shares; the shipped default is the minimum, so the claim is the conservative end of what real recipes do.",
+    "Only derived facts are stored (foods, grams, servings, links). No recipe text. Pages were read by hand on the 'checked' date; links can rot, so re-check before showing one.",
+    "Every changed food (from and to) must have an emission factor in data/food-map.json or the rule fails validation. Foods without carbon numbers are never swapped.",
+    "toMassFactor converts the listed replacement into the rule's 'to' state: dry lentils to cooked is about 2.4 (cooked lentils are roughly 2.3-2.6 times the dry weight; approximate), canned drained weights are already comparable (1)."
+  ],
+  "rules": [
+    {
+      "id": "ground-beef-to-lentils",
+      "title": "Blend some of the beef with lentils",
+      "from": ["beef-ground-raw"],
+      "to": "lentils-cooked",
+      "dishPattern": "\\b(?:chili|chilli|tacos?|bolognese|rag[uù]|meat ?sauce|meatballs?|meat ?loaf|burgers?|cheeseburgers?|sloppy joes?|shepherd'?s|cottage pie|lasagn[ae]|stuffed (?:peppers?|cabbage|zucchini|squash)|enchiladas?|burritos?|nachos|picadillo|hamburger helper|keema|empanadas?|chimichangas?|quesadillas?)\\b",
+      "excludePattern": "\\b(?:tartare|carpaccio|wellington|vegan|vegetarian|plant[- ]based|meatless)\\b",
+      "minFromGrams": 200,
+      "evidence": [
+        {
+          "source": "Queensland Health, beef and lentil bolognese",
+          "url": "https://hw.qld.gov.au/healthy-recipes/beef-and-lentil-bolognese/",
+          "checked": "2026-10-27",
+          "dish": "bolognese",
+          "fromFood": "beef-ground-raw",
+          "fromGrams": 500,
+          "toFood": "lentils-canned",
+          "toGrams": 252,
+          "toMassFactor": 1,
+          "servings": 8,
+          "note": "420 g can brown lentils, drained weight estimated at 60% of the can"
+        },
+        {
+          "source": "Kitchen Confidante, beef and lentil chili",
+          "url": "https://kitchenconfidante.com/wprm_print/beef-and-lentil-chili",
+          "checked": "2026-10-27",
+          "dish": "chili",
+          "fromFood": "beef-ground-raw",
+          "fromGrams": 453.6,
+          "toFood": "lentils-dry",
+          "toGrams": 192,
+          "toMassFactor": 2.4,
+          "servings": null,
+          "note": "1 cup dry French lentils; recipe also uses 4 oz pancetta"
+        },
+        {
+          "source": "Yankee Magazine, lentil and beef chili",
+          "url": "https://newengland.com/food/lentil-and-beef-chili/",
+          "checked": "2026-10-27",
+          "dish": "chili",
+          "fromFood": "beef-ground-raw",
+          "fromGrams": 453.6,
+          "toFood": "lentils-dry",
+          "toGrams": 226.8,
+          "toMassFactor": 2.4,
+          "servings": null,
+          "note": "8 oz dry lentils"
+        }
+      ],
+      "tips": [
+        "Use cooked brown or green lentils, drained well and lightly mashed so they blend into the meat.",
+        "Brown the meat first, then fold in the lentils for the last few minutes.",
+        "Season a little more boldly: lentils are mild."
+      ],
+      "caveats": [
+        "A little lower in protein per serving than all-beef, with more fibre.",
+        "Estimates use French production data (ADEME AGRIBALYSE); real values vary by farm and country."
+      ],
+      "dishCaveats": [
+        { "pattern": "\\b(?:burgers?|cheeseburgers?)\\b", "text": "Texture is softer in burgers: chill the patties before cooking." }
+      ]
+    }
+  ]
+}

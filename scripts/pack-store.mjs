@@ -13,6 +13,13 @@ console.log('[Packager] Preparing official Chrome Web Store production package..
 // 1. Run full audits & build
 execSync('npm test', { stdio: 'inherit', cwd: projectRoot });
 
+// The data credit must ship inside the package
+const shippedNotice = path.join(distPath, 'NOTICE');
+if (!existsSync(shippedNotice) || !/ADEME/.test(readFileSync(shippedNotice, 'utf8'))) {
+  console.error('[FAIL] dist/NOTICE is missing or does not credit ADEME. Refusing to package.');
+  process.exit(1);
+}
+
 // 2. Read metadata
 const manifest = JSON.parse(readFileSync(path.join(distPath, 'manifest.json'), 'utf8'));
 const version = manifest.version || '0.1.0';

@@ -1,0 +1,19 @@
+Copyright (c) 2026 Kevin Zheng. All rights reserved.
+Applies to the curated mappings, selections, and derived tables in this directory.
+It does not apply to the underlying ADEME data, which stays under its own licence below.
+
+Third-party data
+
+Food emission factors are derived from AGRIBALYSE(R), published by ADEME
+(Agence de la transition ecologique) and made available under the Licence Ouverte /
+Open Licence (Etalab).
+  Source: ADEME, AGRIBALYSE - https://agribalyse.ademe.fr
+  Open data: https://data.ademe.fr/datasets?topics=TQJGtxm2_
+  Attribution: Source ADEME, donnees AGRIBALYSE v3.2 - 2025
+  Date of last update: 2025-02-27 for the summary and ingredient-detail files (the source
+  of the emission factors used here); 2025-09-05 for the life-cycle-stage detail file.
+  Version and dates as stated by the data.ademe.fr portal when downloaded 2026-10-27;
+  update these lines whenever the data is re-fetched.
+
+AGRIBALYSE is a registered trademark of ADEME. ADEME does not endorse this project, and
+values here may have been selected, mapped, or rounded from the original data.

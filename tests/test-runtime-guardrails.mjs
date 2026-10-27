@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { newOfflinePage } from './lib/offline.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const testsDir = path.dirname(__filename);
@@ -171,7 +172,7 @@ try {
   // -------------------------------------------------------------
   // GUARDRAIL 4: Shadow DOM Isolation Contract in Injected Pages
   // -------------------------------------------------------------
-  const contentPage = await browser.newPage();
+  const contentPage = await newOfflinePage(browser);
   // Open target shopping demo scenario to trigger content script
   await contentPage.goto('https://example.com/?scenario=c', { waitUntil: 'domcontentloaded' });
 

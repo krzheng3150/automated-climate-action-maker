@@ -2,8 +2,10 @@ node_modules/
 dist/
 *.zip
 .cache/
+data/raw/
 .DS_Store
 assets/screenshots/
 *.png
 !assets/icons/*.png
 !assets/store/*.png
+data/discovery/

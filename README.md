@@ -44,7 +44,9 @@ automated-climate-action-maker/
 ### 1. Install Dependencies
 ```bash
 npm install
+npm run setup:browser
 ```
+`setup:browser` downloads the Chrome build that the Puppeteer test suites drive (stream, guardrails, e2e, diagnostics). Puppeteer normally does this during `npm install`; run it again if that step was skipped (for example `PUPPETEER_SKIP_DOWNLOAD` or `npm install --ignore-scripts`) and the tests fail with "Could not find Chrome". Installed Google Chrome cannot be used for the tests because it ignores `--load-extension`.
 
 ### 2. Build the Extension
 ```bash

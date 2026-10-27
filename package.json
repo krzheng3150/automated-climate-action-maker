@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Automated Climate Action Maker Chrome Extension",
   "scripts": {
+    "setup:browser": "puppeteer browsers install chrome",
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
     "launch": "node scripts/launch.mjs",
@@ -12,6 +13,15 @@
     "test:migration": "npm run build && node tests/test-storage-migration.mjs",
     "test:diagnostics": "npm run build && node tests/test-diagnostics-buffer.mjs",
     "test:outbound": "npm run build && node tests/test-outbound.mjs",
+    "test:agribalyse": "node tests/test-agribalyse-fetch.mjs",
+    "test:food": "npm run build && node tests/test-food-data.mjs",
+    "test:swaps": "npm run build && node tests/test-swaps.mjs",
+    "discover:swaps": "node scripts/discover-swaps.mjs",
+    "curate:swaps": "node scripts/curate-swaps.mjs",
+    "generate:swaps": "node scripts/generate-swaps.mjs",
+    "test:foodparser": "npm run build && node tests/test-food-parser.mjs",
+    "generate:food": "node scripts/generate-food-data.mjs",
+    "fetch:agribalyse": "node scripts/fetch-agribalyse.mjs",
     "test:e2e": "npm run build && node tests/test-e2e-all.mjs",
     "pack:store": "node scripts/pack-store.mjs",
     "build:privacy": "node scripts/build-privacy-page.mjs",
@@ -20,7 +30,7 @@
     "generate:store-assets": "node scripts/generate-store-assets.mjs",
     "check:static": "node scripts/check-static.mjs",
     "check:runtime": "npm run build && node tests/test-runtime-guardrails.mjs",
-    "check:guardrails": "npm run typecheck && npm run check:static && npm run test:migration && npm run test:diagnostics && npm run test:outbound && npm run check:runtime",
+    "check:guardrails": "npm run typecheck && npm run check:static && npm run test:migration && npm run test:diagnostics && npm run test:outbound && npm run test:food && npm run test:foodparser && npm run test:swaps && npm run check:runtime",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

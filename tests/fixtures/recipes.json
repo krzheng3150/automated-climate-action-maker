@@ -1,0 +1,121 @@
+{
+  "about": "Hand-written recipes (original wording). swap is the expected suggestion id or null; complete is the expected `complete` flag.",
+  "recipes": [
+    {
+      "name": "Classic Beef Chili",
+      "recipeYield": "6 servings",
+      "keywords": "chili, comfort food",
+      "ingredients": [
+        "2 lbs 80/20 ground beef",
+        "1 large yellow onion, diced",
+        "3 cloves garlic, minced",
+        "2 cans (15 oz) kidney beans, drained",
+        "1 can (14.5 oz) diced tomatoes",
+        "2 tbsp chili powder",
+        "1 tsp ground cumin",
+        "salt and pepper, to taste"
+      ],
+      "swap": "ground-beef-to-lentils",
+      "complete": true,
+      "dishReduction": [25, 35]
+    },
+    {
+      "name": "Weeknight Spaghetti Bolognese",
+      "recipeYield": ["4", "4 servings"],
+      "ingredients": [
+        "1 lb ground beef",
+        "1 onion, diced",
+        "2 carrots, finely diced",
+        "1 can (14.5 oz) diced tomatoes",
+        "1/2 cup red wine",
+        "12 oz spaghetti",
+        "2 tbsp olive oil"
+      ],
+      "swap": "ground-beef-to-lentils",
+      "complete": false,
+      "dishReduction": null
+    },
+    {
+      "name": "Beef Tacos",
+      "recipeYield": "Serves 4-6",
+      "ingredients": ["8 oz ground beef", "1 packet taco seasoning", "1 cup shredded cheddar cheese", "8 taco shells"],
+      "swap": "ground-beef-to-lentils",
+      "complete": false,
+      "dishReduction": null
+    },
+    {
+      "name": "Classic Cheeseburgers",
+      "recipeYield": "4 burgers",
+      "ingredients": ["1.5 lb ground beef", "4 slices cheddar cheese", "4 buns", "salt and pepper"],
+      "swap": "ground-beef-to-lentils",
+      "complete": false,
+      "dishReduction": null,
+      "caveatContains": "Texture is softer in burgers"
+    },
+    {
+      "name": "Lasagna",
+      "ingredients": ["1 lb ground beef", "8 oz ground beef", "9 lasagna noodles", "2 cups mozzarella, shredded", "1 jar pasta sauce"],
+      "swap": "ground-beef-to-lentils",
+      "complete": false,
+      "dishReduction": null,
+      "beefGrams": 680.4
+    },
+    {
+      "name": "Grilled Ribeye Steak",
+      "ingredients": ["2 ribeye steaks (12 oz each)", "2 tbsp butter", "3 cloves garlic", "salt and pepper"],
+      "swap": null
+    },
+    {
+      "name": "Beef Stew",
+      "ingredients": ["2 lb beef stew meat", "3 potatoes", "3 carrots", "1 onion", "4 cups beef broth"],
+      "swap": null
+    },
+    {
+      "name": "Vegetarian Lentil Chili",
+      "ingredients": ["1 cup dry red lentils", "1 can (15 oz) kidney beans, drained", "1 can (14.5 oz) diced tomatoes", "1 onion"],
+      "swap": null
+    },
+    {
+      "name": "Mini Beef Sliders",
+      "keywords": "burger, party food",
+      "ingredients": ["4 oz ground beef", "4 slider buns"],
+      "swap": null
+    },
+    {
+      "name": "Easy Chili",
+      "ingredients": ["1 lb ground beef or ground turkey", "1 can (15 oz) kidney beans", "1 onion"],
+      "swap": null
+    },
+    {
+      "name": "Beef Chili (no amount given)",
+      "keywords": "chili",
+      "ingredients": ["ground beef", "1 can (15 oz) kidney beans", "1 onion"],
+      "swap": null
+    },
+    {
+      "name": "Steak Tartare Burger",
+      "ingredients": ["1 lb ground beef", "1 egg yolk"],
+      "swap": null
+    },
+    {
+      "name": "Turkey Chili",
+      "ingredients": ["1 lb ground turkey", "1 can (15 oz) kidney beans", "1 onion"],
+      "swap": null
+    }
+  ],
+  "servings": [
+    { "value": "6 servings", "expect": 6 },
+    { "value": "6", "expect": 6 },
+    { "value": 4, "expect": 4 },
+    { "value": ["8", "8 servings"], "expect": 8 },
+    { "value": "Serves 4-6", "expect": 5, "approx": true },
+    { "value": "Serves: 4", "expect": 4 },
+    { "value": "4 portions", "expect": 4 },
+    { "value": "12 cookies", "expect": null },
+    { "value": "1 loaf", "expect": null },
+    { "value": "makes 24 muffins", "expect": null },
+    { "value": "", "expect": null },
+    { "value": null, "expect": null },
+    { "value": 0, "expect": null }
+  ]
+}

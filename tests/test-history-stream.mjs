@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { newOfflinePage } from './lib/offline.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const testsDir = path.dirname(__filename);
@@ -21,11 +22,11 @@ const browser = await puppeteer.launch({
 
 try {
   // 1. Generate some browsing history entries in the test session
-  const page1 = await browser.newPage();
+  const page1 = await newOfflinePage(browser);
   console.log('[Test] Navigating to example.com to create history...');
   await page1.goto('https://example.com', { waitUntil: 'domcontentloaded' });
 
-  const page2 = await browser.newPage();
+  const page2 = await newOfflinePage(browser);
   console.log('[Test] Navigating to google.com to create history...');
   try {
     await page2.goto('https://www.google.com', { waitUntil: 'domcontentloaded', timeout: 5000 });
@@ -34,8 +35,9 @@ try {
   }
 
   // 2. Discover extension ID from background service worker target
-  const targets = await browser.targets();
-  const extensionTarget = targets.find((t) => t.type() === 'service_worker' && t.url().includes('chrome-extension://'));
+  const extensionTarget = await browser
+    .waitForTarget((t) => t.type() === 'service_worker' && t.url().includes('chrome-extension://'), { timeout: 5000 })
+    .catch(() => null);
 
   if (!extensionTarget) {
     throw new Error('Extension background service worker target not found.');

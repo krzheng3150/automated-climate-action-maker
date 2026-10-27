@@ -100,16 +100,30 @@ try {
 }
 
 // -------------------------------------------------------------
+// 1b. Data credit: data/NOTICE is the single source of the ADEME attribution
+// -------------------------------------------------------------
+const noticePath = path.join(projectRoot, 'data', 'NOTICE');
+if (!existsSync(noticePath)) {
+  reportFailure('Data Credit', 'data/NOTICE', 'File is missing. It is the single source of the AGRIBALYSE/ADEME attribution.');
+} else if (!/ADEME/.test(readFileSync(noticePath, 'utf8')) || !/AGRIBALYSE/.test(readFileSync(noticePath, 'utf8'))) {
+  reportFailure('Data Credit', 'data/NOTICE', 'Must credit ADEME and AGRIBALYSE.');
+} else {
+  reportPass('Data Credit: data/NOTICE credits ADEME AGRIBALYSE');
+}
+
+// -------------------------------------------------------------
 // 2. Scan TypeScript Source Files
 // -------------------------------------------------------------
 const srcDir = path.join(projectRoot, 'src');
-const tsFiles = existsSync(srcDir)
-  ? readdirSync(srcDir)
-      .filter((f) => f.endsWith('.ts'))
-      .map((f) => path.join(srcDir, f))
-  : readdirSync(projectRoot)
-      .filter((f) => f.endsWith('.ts'))
-      .map((f) => path.join(projectRoot, f));
+function collectTsFiles(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return collectTsFiles(full);
+    return entry.name.endsWith('.ts') ? [full] : [];
+  });
+}
+
+const tsFiles = existsSync(srcDir) ? collectTsFiles(srcDir) : collectTsFiles(projectRoot);
 
 const forbiddenNetworkPatterns = [
   { pattern: /\bfetch\s*\(/g, name: 'fetch()' },

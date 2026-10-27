@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { keepBrowserOffline, newOfflinePage } from './lib/offline.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const testsDir = path.dirname(__filename);
@@ -19,6 +20,8 @@ const browser = await puppeteer.launch({
   ],
 });
 
+keepBrowserOffline(browser);
+
 try {
   // 1. Discover service worker target
   const workerTarget = await browser.waitForTarget(
@@ -29,7 +32,7 @@ try {
   console.log('[1/4] Background worker active with ID:', extensionId);
 
   // 2. Test Scenario A (Civic Action Overlay)
-  const pageA = await browser.newPage();
+  const pageA = await newOfflinePage(browser);
   await pageA.goto('https://example.com/?scenario=a', { waitUntil: 'domcontentloaded' });
   await pageA.waitForSelector('#acam-overlay-host', { timeout: 6000 });
 
@@ -50,7 +53,7 @@ try {
   console.log('[2/4] Scenario A interaction succeeded:', successA);
 
   // 3. Test Scenario C (Shopping Refurbished Circular Overlay)
-  const pageC = await browser.newPage();
+  const pageC = await newOfflinePage(browser);
   await pageC.goto('https://example.com/?scenario=c&item=ThinkPad+T14', { waitUntil: 'domcontentloaded' });
   await pageC.waitForSelector('#acam-overlay-host', { timeout: 6000 });
 
@@ -91,7 +94,9 @@ try {
   if ((stats.totalCo2SavedKg || 0) < 65) throw new Error('CO2 savings not recorded');
 
   // Outbound helper: the circular click must have opened its tab through openOutbound()
-  const outboundTab = browser.targets().find((t) => t.url().includes('backmarket.com'));
+  const outboundTab = await browser
+    .waitForTarget((t) => t.url().includes('backmarket.com'), { timeout: 5000 })
+    .catch(() => null);
   if (!outboundTab) throw new Error('Back Market tab was not opened by the circular button');
   const outboundUrl = new URL(outboundTab.url());
   if (outboundUrl.searchParams.get('q') !== 'ThinkPad T14') {
@@ -108,6 +113,12 @@ try {
     throw new Error('Outbound helper reported an unregistered or refused host for a registry partner');
   }
   console.log('[Outbound] Circular redirect opened via helper with marker:', outboundMarkers[0].details);
+
+  // Food emission table: the background worker must report the bundled AGRIBALYSE table as loaded
+  const foodReady = diagnostics.find((d) => d.event === 'FOOD_DATA_READY');
+  if (!foodReady) throw new Error('Background worker never reported FOOD_DATA_READY: the food table is not loaded in the extension');
+  if (diagnostics.some((d) => d.event === 'FOOD_DATA_INVALID')) throw new Error('Background worker reported FOOD_DATA_INVALID');
+  console.log('[Food data] Background loaded the bundled table:', foodReady.details);
 
   // Trigger history scan in popup
   await popupPage.click('#scan-btn');

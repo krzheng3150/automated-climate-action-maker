@@ -2,12 +2,29 @@ import * as esbuild from 'esbuild';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generateFoodData, verifyFoodBundle } from './generate-food-data.mjs';
+import { generateSwaps } from './generate-swaps.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const scriptsDir = path.dirname(__filename);
 const projectRoot = path.resolve(scriptsDir, '..');
 
 const isWatch = process.argv.includes('--watch');
+
+// Regenerate src/food/data.ts from the raw AGRIBALYSE CSV when it is present locally; otherwise
+// the committed file is used. Either way the table is compiled into the background bundle.
+const foodData = generateFoodData();
+console.log(`[food-data] ${foodData.status}${foodData.count ? ` (${foodData.count} foods)` : ''}`);
+
+// Swap rules are validated against the food table on every build; a rule without evidence or
+// without carbon numbers for a changed food fails here.
+const swapRules = generateSwaps();
+console.log(`[swaps] ${swapRules.changed ? 'updated' : 'unchanged'} (${swapRules.rules} rules)`);
+
+function checkFoodBundle() {
+  const { foods, version } = verifyFoodBundle();
+  console.log(`[food-data] bundle verified: ${foods} foods, AGRIBALYSE ${version}, background only`);
+}
 
 function copyStaticFiles() {
   const distDir = path.join(projectRoot, 'dist');
@@ -19,6 +36,12 @@ function copyStaticFiles() {
   const manifestSrc = path.join(projectRoot, 'manifest.json');
   if (existsSync(manifestSrc)) {
     copyFileSync(manifestSrc, path.join(distDir, 'manifest.json'));
+  }
+
+  // Ship the single data-credit file with every build
+  const noticeSrc = path.join(projectRoot, 'data', 'NOTICE');
+  if (existsSync(noticeSrc)) {
+    copyFileSync(noticeSrc, path.join(distDir, 'NOTICE'));
   }
 
   // Copy popup static assets from src/
@@ -61,6 +84,7 @@ const libBuildOptions = {
   entryPoints: {
     index: path.join(projectRoot, 'src/index.ts'),
     outbound: path.join(projectRoot, 'src/outbound.ts'),
+    food: path.join(projectRoot, 'src/food/index.ts'),
   },
   bundle: true,
   format: 'esm',
@@ -79,6 +103,11 @@ if (isWatch) {
         setup(build) {
           build.onEnd(() => {
             copyStaticFiles();
+            try {
+              checkFoodBundle();
+            } catch (err) {
+              console.error(err.message);
+            }
           });
         },
       },
@@ -92,5 +121,6 @@ if (isWatch) {
     esbuild.build(buildOptions),
     esbuild.build(libBuildOptions),
   ]);
+  checkFoodBundle();
   console.log('[esbuild] Build complete. Output written to dist/');
 }

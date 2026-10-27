@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { newOfflinePage } from './lib/offline.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const projectRoot = path.resolve(path.dirname(__filename), '..');
@@ -15,7 +16,7 @@ const browser = await puppeteer.launch({
   ],
 });
 
-const page = await browser.newPage();
+const page = await newOfflinePage(browser);
 page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
 
 await page.goto('https://example.com');
