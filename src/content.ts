@@ -2,6 +2,9 @@
 
 import { recordDiagnostic, type ExtensionMessage } from './index';
 import { buildSearchUrl, openOutbound, partnersInGroup } from './outbound';
+import { detectRecipe } from './recipe-detect';
+import { REWARDS } from './rewards';
+import type { RecipeSuggestionView } from './food/suggest';
 
 /**
  * Automated Climate Action Maker (ACAM) - Content Script
@@ -9,6 +12,28 @@ import { buildSearchUrl, openOutbound, partnersInGroup } from './outbound';
  * using isolated Shadow DOM and safe DOM manipulation (Zero innerHTML interpolation).
  */
 type ScenarioType = 'scenario-a' | 'scenario-c';
+
+const FOOD_STYLES = `
+      .detail-list {
+        margin: 0 0 12px 0;
+        padding: 0 0 0 16px;
+        font-size: 11px;
+        color: #374151;
+        line-height: 1.5;
+      }
+      .fine-print {
+        font-size: 10px;
+        color: #6b7280;
+        line-height: 1.4;
+        margin: 0 0 12px 0;
+      }
+      .btn-quiet {
+        background: transparent;
+        color: #6b7280;
+        border: 1px solid #e5e7eb;
+      }
+      .btn-quiet:hover { background: #f3f4f6; }
+`;
 
 class ACAMContentScript {
   private container: HTMLDivElement | null = null;
@@ -29,7 +54,10 @@ class ACAMContentScript {
     });
     this.registerMessageListeners();
     this.scenario = this.detectScenario();
-    if (!this.scenario) return;
+    if (!this.scenario) {
+      this.armRecipeDetection();
+      return;
+    }
 
     recordDiagnostic({
       source: 'content',
@@ -181,15 +209,8 @@ class ACAMContentScript {
     this.displayIntervention(scenario);
   }
 
-  private displayIntervention(scenario: ScenarioType): void {
-    if (document.getElementById('acam-overlay-host')) return;
-
-    this.container = document.createElement('div');
-    this.container.id = 'acam-overlay-host';
-    this.shadowRoot = this.container.attachShadow({ mode: 'open' });
-
-    const style = document.createElement('style');
-    style.textContent = `
+  private static styleSheet(): string {
+    return `
       :host {
         all: initial;
         position: fixed;
@@ -315,7 +336,18 @@ class ACAMContentScript {
         font-size: 11px;
         color: #047857;
       }
-    `;
+    ` + FOOD_STYLES;
+  }
+
+  private displayIntervention(scenario: ScenarioType): void {
+    if (document.getElementById('acam-overlay-host')) return;
+
+    this.container = document.createElement('div');
+    this.container.id = 'acam-overlay-host';
+    this.shadowRoot = this.container.attachShadow({ mode: 'open' });
+
+    const style = document.createElement('style');
+    style.textContent = ACAMContentScript.styleSheet();
 
     // Safe DOM Construction (No dynamic innerHTML)
     const card = document.createElement('div');
@@ -397,6 +429,143 @@ class ACAMContentScript {
     document.body.appendChild(this.container);
   }
 
+  /** Looks for a recipe once the page has had time to render, and asks the background for a swap. */
+  private armRecipeDetection(): void {
+    setTimeout(() => {
+      if (this.triggered) return;
+      const recipe = detectRecipe(document);
+      if (!recipe) return;
+      recordDiagnostic({
+        source: 'content',
+        level: 'info',
+        event: 'RECIPE_DETECTED',
+        details: `via=${recipe.via} ingredients=${recipe.ingredients.length}`,
+      });
+      chrome.runtime.sendMessage(
+        {
+          type: 'ANALYZE_RECIPE',
+          payload: {
+            name: recipe.name,
+            ingredients: recipe.ingredients,
+            recipeYield: recipe.recipeYield,
+            keywords: recipe.keywords,
+            category: recipe.category,
+            cuisine: recipe.cuisine,
+          },
+        },
+        (response?: { suggestion?: RecipeSuggestionView | null }) => {
+          if (chrome.runtime.lastError) return;
+          const suggestion = response?.suggestion;
+          if (suggestion && !this.triggered) this.displayFoodCard(suggestion);
+        }
+      );
+    }, 1500);
+  }
+
+  private displayFoodCard(view: RecipeSuggestionView): void {
+    if (document.getElementById('acam-overlay-host')) return;
+    this.triggered = true;
+    recordDiagnostic({
+      source: 'content',
+      level: 'info',
+      event: 'INTERVENTION_MOUNTED',
+      details: `Shadow DOM intervention mounted for food swap ${view.ruleId}`,
+    });
+
+    this.container = document.createElement('div');
+    this.container.id = 'acam-overlay-host';
+    this.shadowRoot = this.container.attachShadow({ mode: 'open' });
+    const style = document.createElement('style');
+    style.textContent = ACAMContentScript.styleSheet();
+
+    const card = document.createElement('div');
+    card.className = 'acam-card';
+
+    const header = document.createElement('div');
+    header.className = 'acam-header';
+    const badge = document.createElement('span');
+    badge.className = 'pill-badge passive-eco';
+    badge.textContent = '🥗 Lower-carbon swap';
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'close-btn';
+    closeBtn.className = 'dismiss-btn';
+    closeBtn.textContent = '×';
+    header.append(badge, closeBtn);
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'title';
+    titleEl.textContent = view.title;
+
+    const descEl = document.createElement('p');
+    descEl.className = 'description';
+    descEl.textContent = view.summary;
+
+    const list = document.createElement('ul');
+    list.className = 'detail-list';
+    list.id = 'swap-amounts';
+    const lines = [
+      `${view.fromLabel}: ${view.fromGramsBefore} g → ${view.fromGramsAfter} g`,
+      `${view.toLabel}: add ${view.toGrams} g`,
+      view.dishReductionPercent !== null
+        ? `Whole recipe: about ${view.dishReductionPercent}% less CO₂e`
+        : `Those ingredients: about ${view.lineReductionPercent}% less CO₂e`,
+    ];
+    for (const line of lines) {
+      const item = document.createElement('li');
+      item.textContent = line;
+      list.appendChild(item);
+    }
+
+    const fine = document.createElement('p');
+    fine.className = 'fine-print';
+    fine.textContent = `${view.caveat ?? ''} Based on ${view.evidenceCount} published recipes. Estimates only.`.trim();
+
+    const actionContainer = document.createElement('div');
+    actionContainer.id = 'action-container';
+    actionContainer.className = 'action-row';
+
+    const acceptBtn = document.createElement('button');
+    acceptBtn.id = 'swap-accept-btn';
+    acceptBtn.className = 'btn btn-primary';
+    acceptBtn.textContent = "I'll cook it this way";
+    acceptBtn.addEventListener('click', () => this.acceptFoodSwap(view, card));
+
+    const skipBtn = document.createElement('button');
+    skipBtn.id = 'swap-skip-btn';
+    skipBtn.className = 'btn btn-quiet';
+    skipBtn.textContent = 'Not for me';
+    skipBtn.addEventListener('click', () => this.removePrompt());
+    actionContainer.append(acceptBtn, skipBtn);
+
+    card.append(header, titleEl, descEl, list, fine, actionContainer);
+    closeBtn.addEventListener('click', () => this.removePrompt());
+    this.shadowRoot.append(style, card);
+    document.body.appendChild(this.container);
+  }
+
+  private acceptFoodSwap(view: RecipeSuggestionView, card: HTMLElement): void {
+    recordDiagnostic({
+      source: 'content',
+      level: 'info',
+      event: 'ACTION_EXECUTED',
+      details: `Food swap accepted: ${view.ruleId}`,
+    });
+    chrome.runtime.sendMessage(
+      {
+        type: 'RECORD_ACTION',
+        payload: {
+          actionId: `food_swap_${view.ruleId}`,
+          label: view.title,
+          co2SavedKg: view.co2eSavedKg,
+          points: REWARDS.foodSwap.points,
+        },
+      },
+      () => {
+        this.showSuccessMessage(card, '✓ Nice swap!', `About ${view.co2eSavedKg} kg CO₂e saved`);
+      }
+    );
+  }
+
   private showSuccessMessage(card: HTMLElement, titleText: string, subText: string): void {
     const actionContainer = card.querySelector('#action-container');
     if (!actionContainer) return;
@@ -432,8 +601,8 @@ class ACAMContentScript {
         payload: {
           actionId: 'civic_petition_sent',
           label: 'Civic Representative Letter',
-          co2SavedKg: 0,
-          points: 50,
+          co2SavedKg: REWARDS.civicLetter.co2SavedKg,
+          points: REWARDS.civicLetter.points,
         },
       },
       () => {
@@ -463,8 +632,8 @@ class ACAMContentScript {
         payload: {
           actionId: 'circular_marketplace_search',
           label: `${provider} Search`,
-          co2SavedKg: 65,
-          points: 80,
+          co2SavedKg: REWARDS.circularSearch.co2SavedKg,
+          points: REWARDS.circularSearch.points,
         },
       },
       () => {

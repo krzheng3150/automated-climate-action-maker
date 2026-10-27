@@ -3,3 +3,4 @@ export * from './parser';
 export * from './quantity';
 export * from './recipe';
 export * from './swaps';
+export * from './suggest';

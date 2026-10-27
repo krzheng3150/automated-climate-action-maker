@@ -94,7 +94,7 @@ function suggestFor(rule: SwapRule, analysis: RecipeAnalysis): SwapSuggestion | 
   return {
     id: rule.id,
     title: rule.title,
-    summary: `Replace about ${percent}% of the ${getFoodFactor(rule.from[0] as string)?.label.toLowerCase() ?? 'main ingredient'} with ${to.label.toLowerCase()}: about ${lineReductionPercent}% less CO2e for those ingredients, and the dish stays a ${analysis.name || 'recipe'} you recognise.`,
+    summary: `Replace about ${percent}% of the ${getFoodFactor(rule.from[0] as string)?.label.toLowerCase() ?? 'main ingredient'} with ${to.label.replace(/\s*\(.*?\)/g, '').toLowerCase()}: about ${lineReductionPercent}% less CO2e for those ingredients, and the dish stays a ${analysis.name || 'recipe'} you recognise.`,
     fromFoodIds: [...rule.from],
     toFoodId: rule.to,
     fromGramsBefore: fromGrams,

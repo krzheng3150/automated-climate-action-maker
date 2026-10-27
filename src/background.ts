@@ -18,6 +18,7 @@ import {
   type VisitedDomainDelta,
 } from './index';
 import { checkFoodData } from './food/emissions';
+import { suggestForRecipe } from './food/suggest';
 
 /**
  * Automated Climate Action Maker (ACAM) - Background Service Worker
@@ -415,6 +416,30 @@ chrome.runtime.onMessage.addListener(
     }
 
     const msg = message as any;
+
+    // Recipe text collected by a content script; only tabs may ask, and nothing is stored.
+    if (msg.type === 'ANALYZE_RECIPE') {
+      if (!_sender.tab) return false;
+      let suggestion = null;
+      try {
+        suggestion = suggestForRecipe(msg.payload);
+      } catch (err) {
+        recordDiagnostic({
+          source: 'background',
+          level: 'error',
+          event: 'RECIPE_ANALYSIS_ERROR',
+          details: err instanceof Error ? err.message : String(err),
+        });
+      }
+      recordDiagnostic({
+        source: 'background',
+        level: 'info',
+        event: suggestion ? 'RECIPE_SUGGESTION_READY' : 'RECIPE_NO_SUGGESTION',
+        details: suggestion ? `rule=${suggestion.ruleId} saving=${suggestion.co2eSavedKg}kg` : 'no swap fits this recipe',
+      });
+      sendResponse({ suggestion });
+      return false;
+    }
 
     if (msg.type === 'RECORD_ACTION') {
       recordClimateAction(msg.payload).then((updatedStats) => {

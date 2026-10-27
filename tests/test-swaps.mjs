@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { buildSwapRules, evidenceShare, loadFoodIds, SWAPS_PATH } from '../scripts/generate-swaps.mjs';
-import { SWAP_RULES, analyzeRecipe, getFoodFactor, suggestSwaps } from '../dist/food.js';
+import { SWAP_RULES, analyzeRecipe, getFoodFactor, suggestForRecipe, suggestSwaps } from '../dist/food.js';
 import { discover } from '../scripts/discover-swaps.mjs';
 
 console.log('[Test: Swaps] Verifying the evidence-backed swap registry...');
@@ -102,6 +102,22 @@ assert(byUrl('https://a.test/noamount').status === 'reject', 'A changed ingredie
 assert(byUrl('https://a.test/placeholder').status === 'no-structured-recipe', 'Template placeholders are not treated as recipes');
 assert(byUrl('https://a.test/bare').status === 'no-structured-recipe', 'Pages without structured data are reported, not guessed');
 assert(throwsWith(() => { throw new Error('x'); }, 'x') && (await discover(Array(21).fill('https://a.test/good'), { analyzeRecipe, getFoodFactor, rules: SWAP_RULES, read: async () => '', delayMs: 0 }).then(() => false, (e) => e.message.includes('at most'))), 'A run is capped at 20 pages');
+
+// 6. The background entry point treats page text as untrusted
+const chili = { name: 'Beef Chili', recipeYield: '6 servings', ingredients: ['2 lbs ground beef', '1 can (15 oz) kidney beans'] };
+const view = suggestForRecipe(chili);
+assert(view && view.co2eSavedKg > 5 && view.fromGramsBefore % 5 === 0 && view.toLabel === 'lentils', 'A recipe becomes a display-ready suggestion with rounded amounts');
+for (const bad of [null, undefined, 42, 'x', [], {}, { ingredients: 'beef' }, { ingredients: [] }, { ingredients: [1, null, {}] }, { name: 7, ingredients: ['2 lbs ground beef'] }]) {
+  let out;
+  try {
+    out = suggestForRecipe(bad);
+  } catch (err) {
+    out = `threw ${err.message}`;
+  }
+  assert(out === null, `Malformed input ${JSON.stringify(bad)} gives no suggestion and no crash`);
+}
+const flood = suggestForRecipe({ name: 'Beef Chili', ingredients: Array(5000).fill('x'.repeat(5000)).concat(['2 lbs ground beef']) });
+assert(flood === null, 'Oversized input is truncated, so a late ingredient line cannot be smuggled in');
 
 console.log('----------------------------------------------------');
 if (failures > 0) {

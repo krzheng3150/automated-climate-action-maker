@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { keepBrowserOffline, newOfflinePage } from './lib/offline.mjs';
@@ -78,6 +79,43 @@ try {
   const successC = await shadowC.$eval('.success-title', (el) => el.textContent);
   console.log('[3/4] Scenario C circular interaction succeeded:', successC);
 
+  // 3b. Food: a recipe page gets one swap card, computed in the background from the page's own text
+  const fixture = (name) => readFileSync(path.join(testsDir, 'fixtures', 'pages', name), 'utf8');
+  const recipePages = {
+    'https://recipes.test/chili': fixture('chili.html'),
+    'https://recipes.test/salad': fixture('salad.html'),
+    'https://recipes.test/bolognese': fixture('microdata-bolognese.html'),
+  };
+
+  const chiliPage = await newOfflinePage(browser, recipePages);
+  await chiliPage.goto('https://recipes.test/chili', { waitUntil: 'domcontentloaded' });
+  await chiliPage.waitForSelector('#acam-overlay-host', { timeout: 8000 });
+  const chiliShadow = await (await chiliPage.$('#acam-overlay-host')).evaluateHandle((el) => el.shadowRoot);
+  const amounts = await chiliShadow.$$eval('#swap-amounts li', (items) => items.map((li) => li.textContent));
+  if (!/ground beef: 905 g → 610 g/.test(amounts[0] ?? '') || !/add 300 g/.test(amounts[1] ?? '')) {
+    throw new Error(`Unexpected swap amounts on the chili page: ${JSON.stringify(amounts)}`);
+  }
+  if (!/% less CO₂e/.test(amounts[2] ?? '')) throw new Error('Swap card shows no reduction figure');
+  const exposed = await chiliPage.evaluate(() => Boolean(document.querySelector('#swap-amounts, #swap-accept-btn')));
+  if (exposed) throw new Error('Food card leaked outside its Shadow DOM');
+  await (await chiliShadow.$('#swap-accept-btn')).click();
+  await chiliPage.waitForFunction(
+    () => Boolean(document.getElementById('acam-overlay-host')?.shadowRoot?.querySelector('.success-title')),
+    { timeout: 4000 }
+  );
+  console.log('[3b] Chili page showed a computed swap and accepted it:', amounts.join(' | '));
+
+  const bologneseTab = await newOfflinePage(browser, recipePages);
+  await bologneseTab.goto('https://recipes.test/bolognese', { waitUntil: 'domcontentloaded' });
+  await bologneseTab.waitForSelector('#acam-overlay-host', { timeout: 8000 });
+  console.log('[3b] Microdata-only recipe page (no JSON-LD) also detected');
+
+  const saladPage = await newOfflinePage(browser, recipePages);
+  await saladPage.goto('https://recipes.test/salad', { waitUntil: 'domcontentloaded' });
+  await new Promise((r) => setTimeout(r, 3500));
+  if (await saladPage.$('#acam-overlay-host')) throw new Error('A recipe with no fitting swap must stay silent');
+  console.log('[3b] Salad recipe stayed silent');
+
   // 4. Test Background Storage & Popup Trace Stream
   const popupPage = await browser.newPage();
   const popupUrl = `chrome-extension://${extensionId}/popup.html`;
@@ -91,6 +129,7 @@ try {
   console.log(`[4/4] Impact stats in storage: Civic Points = ${stats.civicPoints}, CO2 Saved = ${stats.totalCo2SavedKg} kg`);
 
   if ((stats.civicPoints || 0) < 50) throw new Error('Civic points not recorded');
+  if (!(stats.actionsCount >= 3)) throw new Error('Food swap acceptance not counted as an action');
   if ((stats.totalCo2SavedKg || 0) < 65) throw new Error('CO2 savings not recorded');
 
   // Outbound helper: the circular click must have opened its tab through openOutbound()

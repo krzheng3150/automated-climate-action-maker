@@ -92,3 +92,13 @@ npm run pack:store
 2. Enable **Developer mode** in the top-right corner.
 3. Click **Load unpacked** and select the `dist/` directory inside this repository.
 4. Click the ACAM icon in your browser toolbar and hit **"Run On-Device Analysis"** to observe the live compute stream and raw domain frequency breakdown.
+
+### Prototyping the food feature
+```bash
+npm run demo:recipe              # opens Chrome with the extension on a chili recipe fixture (works offline)
+npm run demo:recipe -- salad     # another fixture from tests/fixtures/pages
+npm run demo:recipe -- ./my.html # a recipe page you saved
+npm run demo:recipe -- https://… # a live page
+npm run watch                    # rebuild on save
+```
+Edit swap rules in `data/swaps.json` (ratios come from the evidence list), reward values in `src/rewards.ts`, and find more evidence with `npm run discover:swaps -- <url>` then `npm run curate:swaps`.

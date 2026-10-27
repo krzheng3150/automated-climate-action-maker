@@ -5,7 +5,7 @@
 // ============================================================================
 
 export interface ExtensionMessage<T = unknown> {
-  type: 'HELLO' | 'GET_STATUS' | 'RECORD_ACTION';
+  type: 'HELLO' | 'GET_STATUS' | 'RECORD_ACTION' | 'ANALYZE_RECIPE';
   payload?: T;
 }
 
