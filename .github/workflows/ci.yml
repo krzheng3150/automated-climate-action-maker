@@ -72,6 +72,8 @@ jobs:
 
       - name: 8. Auto-tag on version bump (master only)
         if: github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'main')
+        env:
+          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
         run: |
           VERSION="v$(node -p "require('./manifest.json').version")"
           if git rev-parse "$VERSION" >/dev/null 2>&1; then
@@ -79,5 +81,10 @@ jobs:
           else
             echo "New version detected: $VERSION — creating tag."
             git tag "$VERSION"
-            git push origin "$VERSION"
+            if [ -n "$RELEASE_PAT" ]; then
+              git push "https://x-access-token:${RELEASE_PAT}@github.com/${{ github.repository }}" "$VERSION"
+            else
+              echo "::warning::RELEASE_PAT secret not set — tag pushed with GITHUB_TOKEN (won't trigger release workflow)."
+              git push origin "$VERSION"
+            fi
           fi

@@ -49,7 +49,7 @@ jobs:
       - name: Publish to Chrome Web Store (or Dry-Run Preflight)
         env:
           CWS_EXTENSION_ID: kljhdfloengjjapadoimmdfmmjkannpk
-          CWS_CLIENT_ID: 492323777295-loalmrc79cfpfvh8d54oi8bpg652pjre.apps.googleusercontent.com
+          CWS_CLIENT_ID: 492323777295-6nh6sdd05iggjng4qdpba3adc87fa4bo.apps.googleusercontent.com
           CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
           CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
         run: |
