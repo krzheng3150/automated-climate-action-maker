@@ -167,8 +167,13 @@ for (const filePath of tsFiles) {
     }
   }
 
-  // Check outbound links bypassing the partner-tagging helper
-  if (!relPath.endsWith('outbound.ts')) {
+  // Check outbound links bypassing the partner-tagging helper.
+  // Generated data files (civic/data.ts, civic/recommend.ts) contain URL constants
+  // but never open them — the content script opens them via openOutbound().
+  const isOutboundExempt = relPath.endsWith('outbound.ts')
+    || relPath === path.join('src', 'civic', 'data.ts')
+    || relPath === path.join('src', 'civic', 'recommend.ts');
+  if (!isOutboundExempt) {
     for (const item of forbiddenOutboundPatterns) {
       if (content.match(item.pattern)) {
         reportFailure(

@@ -450,16 +450,40 @@ class ACAMContentScript {
     card.appendChild(actionContainer);
 
     if (scenario === 'scenario-a') {
-      snippetEl.textContent = '"Urging swift passage of renewable energy standards in our district..."';
+      snippetEl.textContent = 'Finding relevant climate actions for your region...';
 
       const actionBtn = document.createElement('button');
       actionBtn.id = 'action-btn';
       actionBtn.className = 'btn btn-primary';
-      actionBtn.textContent = 'Send with 1-Click (+50 pts)';
-      actionBtn.addEventListener('click', () => {
-        this.executeCivicAction(card);
-      });
+      actionBtn.textContent = 'Take Action (+50 pts)';
+      actionBtn.disabled = true;
       actionContainer.appendChild(actionBtn);
+
+      chrome.runtime.sendMessage({ type: 'GET_CIVIC_ACTIONS' }, (resp) => {
+        if (!resp || !resp.actions || resp.actions.length === 0) {
+          snippetEl.textContent = '"Urging swift passage of renewable energy standards in our district..."';
+          actionBtn.textContent = 'Send with 1-Click (+50 pts)';
+          actionBtn.disabled = false;
+          actionBtn.addEventListener('click', () => {
+            this.executeCivicAction(card, null);
+          });
+          return;
+        }
+
+        const topAction = resp.actions[0];
+        const sigText = topAction.signatures ? ` — ${topAction.signatures.toLocaleString()} signatures` : '';
+        snippetEl.textContent = `${topAction.title}${sigText}`;
+
+        const regionLabel = resp.region.countryName || resp.region.country;
+        titleEl.textContent = `Climate Action in ${regionLabel}`;
+        descEl.textContent = `${topAction.platform}: Take action on a real ${topAction.type} relevant to your browsing interests.`;
+
+        actionBtn.textContent = `Take Action (+50 pts)`;
+        actionBtn.disabled = false;
+        actionBtn.addEventListener('click', () => {
+          this.executeCivicAction(card, topAction.url);
+        });
+      });
     } else {
       const productTitle = this.extractProductTitle();
       snippetEl.textContent = `Target: ${productTitle} (Save up to ~65 kg CO₂e)`;
@@ -725,19 +749,23 @@ class ACAMContentScript {
     setTimeout(() => this.removePrompt(), 15000);
   }
 
-  private executeCivicAction(card: HTMLElement): void {
+  private executeCivicAction(card: HTMLElement, actionUrl: string | null): void {
+    if (actionUrl) {
+      openOutbound(actionUrl, { source: 'content', placement: 'civic-action' });
+    }
+
     recordDiagnostic({
       source: 'content',
       level: 'info',
       event: 'ACTION_EXECUTED',
-      details: 'Civic representative petition letter queued (+50 pts)',
+      details: `Civic action opened (+50 pts)${actionUrl ? '' : ' (generic fallback)'}`,
     });
     chrome.runtime.sendMessage(
       {
         type: 'RECORD_ACTION',
         payload: {
           actionId: 'civic_petition_sent',
-          label: 'Civic Representative Letter',
+          label: 'Civic Action',
           co2SavedKg: REWARDS.civicLetter.co2SavedKg,
           points: REWARDS.civicLetter.points,
         },
@@ -745,9 +773,9 @@ class ACAMContentScript {
       () => {
         this.showSuccessMessage(
           card,
-          '✓ Civic Comment Submitted!',
-          '+50 points earned | Letter queued to rep\'s office',
-          { recId: 'civic_petition_sent', recTitle: 'Civic Representative Letter' }
+          '✓ Civic Action Opened!',
+          '+50 points earned | Every signature counts',
+          { recId: 'civic_petition_sent', recTitle: 'Civic Action' }
         );
       }
     );

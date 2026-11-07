@@ -5,7 +5,7 @@
 // ============================================================================
 
 export interface ExtensionMessage<T = unknown> {
-  type: 'HELLO' | 'GET_STATUS' | 'RECORD_ACTION' | 'ANALYZE_RECIPE' | 'RECORD_FEEDBACK';
+  type: 'HELLO' | 'GET_STATUS' | 'RECORD_ACTION' | 'ANALYZE_RECIPE' | 'RECORD_FEEDBACK' | 'GET_CIVIC_ACTIONS';
   payload?: T;
 }
 
@@ -350,6 +350,7 @@ export const STORAGE_KEYS = {
   PENDING_VISITS: 'pendingVisits',
   DIAGNOSTICS_LOG: 'diagnosticsLog',
   FEEDBACK_LOG: 'feedbackLog',
+  USER_REGION_OVERRIDE: 'userRegionOverride',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

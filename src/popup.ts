@@ -286,6 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.PENDING_VISITS,
       STORAGE_KEYS.DIAGNOSTICS_LOG,
       STORAGE_KEYS.FEEDBACK_LOG,
+      STORAGE_KEYS.USER_REGION_OVERRIDE,
     ]);
     renderDiagnostics([]);
     if (googleCountEl) googleCountEl.textContent = '0';

@@ -17,6 +17,8 @@
     "test:agribalyse": "node tests/test-agribalyse-fetch.mjs",
     "test:food": "npm run build && node tests/test-food-data.mjs",
     "test:swaps": "npm run build && node tests/test-swaps.mjs",
+    "test:civic": "npm run build && node tests/test-civic.mjs",
+    "fetch:civic": "node scripts/fetch-civic-actions.mjs",
     "discover:swaps": "node scripts/discover-swaps.mjs",
     "curate:swaps": "node scripts/curate-swaps.mjs",
     "generate:swaps": "node scripts/generate-swaps.mjs",
@@ -31,7 +33,7 @@
     "generate:store-assets": "node scripts/generate-store-assets.mjs",
     "check:static": "node scripts/check-static.mjs",
     "check:runtime": "npm run build && node tests/test-runtime-guardrails.mjs",
-    "check:guardrails": "npm run typecheck && npm run check:static && npm run test:migration && npm run test:diagnostics && npm run test:outbound && npm run test:food && npm run test:foodparser && npm run test:swaps && npm run check:runtime",
+    "check:guardrails": "npm run typecheck && npm run check:static && npm run test:migration && npm run test:diagnostics && npm run test:outbound && npm run test:food && npm run test:foodparser && npm run test:swaps && npm run test:civic && npm run check:runtime",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

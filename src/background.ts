@@ -21,6 +21,9 @@ import {
 } from './index';
 import { checkFoodData } from './food/emissions';
 import { suggestForRecipe } from './food/suggest';
+import { resolveRegion, computeTopicAffinities, topTopics, matchCivicActions, getFallbackPlatforms, COUNTRY_NAMES } from './civic';
+import type { RankedCivicAction } from './civic';
+import { CIVIC_ACTIONS } from './civic/data';
 import { REWARDS } from './rewards';
 
 /**
@@ -458,6 +461,13 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
+    if (msg.type === 'GET_CIVIC_ACTIONS') {
+      getCivicActionsForUser().then((result) => {
+        sendResponse(result);
+      });
+      return true;
+    }
+
     if (message.type === 'GET_STATUS') {
       flushPendingVisits().then(() => {
         chrome.storage.local
@@ -558,4 +568,37 @@ async function recordFeedback(payload: RecordFeedbackPayload): Promise<ACAMStats
   });
 
   return stats;
+}
+
+interface CivicActionsResult {
+  region: { country: string; countryName: string; subdivision: string | null; confidence: number };
+  actions: RankedCivicAction[];
+  fallbackPlatforms: { name: string; url: string }[];
+}
+
+async function getCivicActionsForUser(): Promise<CivicActionsResult> {
+  const data = await chrome.storage.local.get([
+    STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
+    STORAGE_KEYS.USER_REGION_OVERRIDE,
+  ]);
+
+  const snapshot = data[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] as DigitalFootprintSnapshot | null;
+  const override = (data[STORAGE_KEYS.USER_REGION_OVERRIDE] as string) || null;
+  const topDomains = snapshot?.sources?.history?.topDomains ?? [];
+
+  const detected = resolveRegion(topDomains, override);
+  const affinities = computeTopicAffinities(snapshot);
+  const ranked = matchCivicActions(detected.country, affinities, CIVIC_ACTIONS);
+  const fallbacks = getFallbackPlatforms(detected.country);
+
+  return {
+    region: {
+      country: detected.country,
+      countryName: COUNTRY_NAMES[detected.country] || detected.country,
+      subdivision: detected.subdivision,
+      confidence: detected.confidence,
+    },
+    actions: ranked,
+    fallbackPlatforms: fallbacks,
+  };
 }
