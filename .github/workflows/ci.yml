@@ -11,6 +11,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   audit-test-package:
     name: Audit, Verify & Package
@@ -19,6 +22,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js 20 LTS
         uses: actions/setup-node@v4
@@ -64,3 +69,15 @@ jobs:
           path: acam-v*.zip
           retention-days: 14
           if-no-files-found: error
+
+      - name: 8. Auto-tag on version bump (master only)
+        if: github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'main')
+        run: |
+          VERSION="v$(node -p "require('./manifest.json').version")"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists — no release needed."
+          else
+            echo "New version detected: $VERSION — creating tag."
+            git tag "$VERSION"
+            git push origin "$VERSION"
+          fi

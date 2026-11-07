@@ -18,6 +18,8 @@ To maintain production readiness, user trust, and Chrome Web Store compliance, a
 - **Manifest Restrictions:**
   - `manifest.json` MUST NOT request unrestricted network `host_permissions` (e.g., `<all_urls>`, `*://*/*`, `https://*/*`) for the background worker.
   - Content Security Policy (CSP) must remain strictly locked to `'self'`.
+- **What counts as zero telemetry:** User-initiated tab navigation (via `openOutbound()`) is allowed — the extension opens a URL, the browser loads it. The extension itself makes no network requests. This is the pattern used for feedback sharing (Google Apps Script URL).
+- **CWS re-review trigger:** Any change that adds `host_permissions`, new Chrome permissions, or modifies CSP triggers a Chrome Web Store re-review (1-3+ business days). Flag this to the user before implementing — it's a higher bar than a code change.
 
 ---
 
@@ -37,7 +39,7 @@ To maintain production readiness, user trust, and Chrome Web Store compliance, a
 - **No Raw URL Retention:** The extension must NEVER save full URLs, paths, or query parameters (which may contain auth tokens, search queries, or personal identifiers) to `chrome.storage.local`.
 - **Domain Aggregation Only:** Only sanitized hostnames/domains (e.g., `google.com`, `github.com`) and numerical frequencies may be retained in persistent storage.
 - **Bounded Storage Footprint:** Persistent domain frequency maps must be bounded (e.g., top 100 hostnames). Single-visit long-tail domains must be pruned periodically so LevelDB storage stays `< 2 MB`.
-- **Atomic Purge Contract:** Every storage key written by ACAM must be wiped when the user triggers the "Purge Local Cache" action.
+- **Atomic Purge Contract:** Every new `chrome.storage.local` key MUST be added to the purge handler in `popup.ts`. If you add a storage key to `STORAGE_KEYS`, also add it to the purge `chrome.storage.local.remove()` call.
 
 ---
 
@@ -50,16 +52,42 @@ To maintain production readiness, user trust, and Chrome Web Store compliance, a
 
 ---
 
-## 5. Verification & Pre-Commit Gates
+## 5. Outbound Link Policy
 
-Before submitting any code changes, the following checks MUST pass cleanly:
+- **Single choke point:** ALL external tab opens MUST go through `openOutbound()` in `src/outbound.ts`. Direct `chrome.tabs.create()` or `window.open()` in any other file will fail the static checker.
+- This applies even for non-partner URLs (e.g., feedback sharing, docs links).
+- Partner URLs and tagging are managed in the `OUTBOUND_PARTNERS` registry in `outbound.ts`.
+
+---
+
+## 6. Extension Message Bus
+
+- All message types are defined in the `ExtensionMessage` type union in `src/index.ts`.
+- When adding a new background message handler, you MUST add the message type string to this union or TypeScript will reject it.
+- Point values for actions live in `src/rewards.ts` — never hardcode point values elsewhere.
+
+---
+
+## 7. Release & Versioning
+
+**IMPORTANT: Pushing to master with a version bump in `manifest.json` triggers an automatic release to the Chrome Web Store.**
+
+- CI auto-tags when the `version` field in `manifest.json` changes on a master push. The tag triggers the CWS release workflow (build → test → upload).
+- **Before completing any task, ask the user: "Does this change need a version bump in `manifest.json`?"** Do not bump the version without explicit confirmation — an accidental bump triggers a CWS upload.
+- There is no PR workflow. Code is pushed directly to master.
+- The full test suite (`npm test`) must pass before pushing. This runs typecheck, static analysis, migration tests, diagnostics tests, outbound tests, food parser tests, swap tests, and runtime guardrails.
+
+---
+
+## 8. Verification & Pre-Commit Gates
+
+Before pushing any code changes, the following checks MUST pass cleanly:
 ```bash
-# 1. Strict TypeScript validation
-npm run typecheck
+# Full suite (typecheck + static + all unit/integration/runtime tests)
+npm test
 
-# 2. Production bundling
-npm run build
-
-# 3. Automated Guardrails Suite (Static AST + Dynamic Network/Perf Tests)
-npm run check:guardrails
+# Or individually:
+npm run typecheck          # Strict TypeScript validation
+npm run build              # Production bundling
+npm run check:guardrails   # Static AST + Dynamic Network/Perf Tests
 ```
