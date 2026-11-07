@@ -33,6 +33,63 @@ const FOOD_STYLES = `
         border: 1px solid #e5e7eb;
       }
       .btn-quiet:hover { background: #f3f4f6; }
+      .feedback-section {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #e5e7eb;
+      }
+      .feedback-label {
+        font-size: 11px;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+      .feedback-vote-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .vote-btn {
+        flex: 1;
+        padding: 6px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: #f9fafb;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.15s ease;
+      }
+      .vote-btn:hover { background: #f3f4f6; }
+      .vote-btn.selected {
+        border-color: #059669;
+        background: #ecfdf5;
+      }
+      .feedback-comment {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 11px;
+        font-family: inherit;
+        resize: vertical;
+        min-height: 32px;
+        max-height: 80px;
+        margin-bottom: 8px;
+      }
+      .feedback-comment::placeholder { color: #9ca3af; }
+      .btn-feedback {
+        width: 100%;
+        padding: 7px;
+        border: none;
+        border-radius: 6px;
+        background: #059669;
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-feedback:hover { background: #047857; }
+      .btn-feedback:disabled { background: #d1d5db; cursor: default; }
 `;
 
 class ACAMContentScript {
@@ -561,12 +618,22 @@ class ACAMContentScript {
         },
       },
       () => {
-        this.showSuccessMessage(card, '✓ Nice swap!', `About ${view.co2eSavedKg} kg CO₂e saved`);
+        this.showSuccessMessage(
+          card,
+          '✓ Nice swap!',
+          `About ${view.co2eSavedKg} kg CO₂e saved`,
+          { recId: `food_swap_${view.ruleId}`, recTitle: view.title }
+        );
       }
     );
   }
 
-  private showSuccessMessage(card: HTMLElement, titleText: string, subText: string): void {
+  private showSuccessMessage(
+    card: HTMLElement,
+    titleText: string,
+    subText: string,
+    recContext?: { recId: string; recTitle: string }
+  ): void {
     const actionContainer = card.querySelector('#action-container');
     if (!actionContainer) return;
 
@@ -584,8 +651,78 @@ class ACAMContentScript {
     successBox.appendChild(successTitle);
     successBox.appendChild(successSub);
 
-    actionContainer.replaceChildren(successBox);
-    setTimeout(() => this.removePrompt(), 2500);
+    if (!recContext) {
+      actionContainer.replaceChildren(successBox);
+      setTimeout(() => this.removePrompt(), 2500);
+      return;
+    }
+
+    const feedback = document.createElement('div');
+    feedback.className = 'feedback-section';
+
+    const label = document.createElement('div');
+    label.className = 'feedback-label';
+    label.textContent = 'Was this helpful? (+10 pts)';
+
+    const voteRow = document.createElement('div');
+    voteRow.className = 'feedback-vote-row';
+
+    const upBtn = document.createElement('button');
+    upBtn.className = 'vote-btn';
+    upBtn.textContent = '\u{1F44D} Yes';
+
+    const downBtn = document.createElement('button');
+    downBtn.className = 'vote-btn';
+    downBtn.textContent = '\u{1F44E} No';
+
+    let selectedVote: 'up' | 'down' | null = null;
+
+    const onVote = (vote: 'up' | 'down') => {
+      selectedVote = vote;
+      upBtn.className = vote === 'up' ? 'vote-btn selected' : 'vote-btn';
+      downBtn.className = vote === 'down' ? 'vote-btn selected' : 'vote-btn';
+      submitBtn.disabled = false;
+    };
+
+    upBtn.addEventListener('click', () => onVote('up'));
+    downBtn.addEventListener('click', () => onVote('down'));
+    voteRow.append(upBtn, downBtn);
+
+    const commentInput = document.createElement('textarea');
+    commentInput.className = 'feedback-comment';
+    commentInput.placeholder = 'Tell us why (optional)';
+    commentInput.rows = 1;
+
+    const submitBtn = document.createElement('button');
+    submitBtn.className = 'btn-feedback';
+    submitBtn.textContent = 'Submit Feedback (+10 pts)';
+    submitBtn.disabled = true;
+
+    submitBtn.addEventListener('click', () => {
+      if (!selectedVote) return;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+      chrome.runtime.sendMessage(
+        {
+          type: 'RECORD_FEEDBACK',
+          payload: {
+            recId: recContext.recId,
+            recTitle: recContext.recTitle,
+            vote: selectedVote,
+            comment: commentInput.value.trim(),
+          },
+        },
+        () => {
+          submitBtn.textContent = '✓ Thanks! +10 pts';
+          setTimeout(() => this.removePrompt(), 1500);
+        }
+      );
+    });
+
+    feedback.append(label, voteRow, commentInput, submitBtn);
+    actionContainer.replaceChildren(successBox, feedback);
+
+    setTimeout(() => this.removePrompt(), 15000);
   }
 
   private executeCivicAction(card: HTMLElement): void {
@@ -609,7 +746,8 @@ class ACAMContentScript {
         this.showSuccessMessage(
           card,
           '✓ Civic Comment Submitted!',
-          '+50 points earned | Letter queued to rep\'s office'
+          '+50 points earned | Letter queued to rep\'s office',
+          { recId: 'civic_petition_sent', recTitle: 'Civic Representative Letter' }
         );
       }
     );
@@ -640,7 +778,8 @@ class ACAMContentScript {
         this.showSuccessMessage(
           card,
           `✓ ${provider} Opened!`,
-          '+80 pts | Up to ~65 kg embodied CO₂ saved'
+          '+80 pts | Up to ~65 kg embodied CO₂ saved',
+          { recId: 'circular_marketplace_search', recTitle: `${provider} Search` }
         );
       }
     );

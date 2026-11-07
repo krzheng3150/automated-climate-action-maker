@@ -1,12 +1,16 @@
 /// <reference types="chrome" />
 
 import {
+  FEEDBACK_APPS_SCRIPT_URL,
   STORAGE_KEYS,
+  formatFeedbackTSV,
   recordDiagnostic,
   type DiagnosticEntry,
   type HistoryScanResult,
+  type RecommendationFeedback,
   type StreamStep,
 } from './index';
+import { openOutbound } from './outbound';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const permissionCard = document.getElementById('permission-card') as HTMLElement | null;
@@ -31,6 +35,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const diagnosticsCountEl = document.getElementById('diagnostics-count') as HTMLElement | null;
   const copyDiagBtn = document.getElementById('copy-diag-btn') as HTMLButtonElement | null;
   const clearDiagBtn = document.getElementById('clear-diag-btn') as HTMLButtonElement | null;
+
+  const feedbackCountEl = document.getElementById('feedback-count') as HTMLElement | null;
+  const copyFeedbackBtn = document.getElementById('copy-feedback-btn') as HTMLButtonElement | null;
+  const shareFeedbackBtn = document.getElementById('share-feedback-btn') as HTMLButtonElement | null;
 
   function renderDiagnostics(logs: DiagnosticEntry[]): void {
     if (diagnosticsCountEl) {
@@ -277,6 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.LAST_INCREMENTAL_TIMESTAMP,
       STORAGE_KEYS.PENDING_VISITS,
       STORAGE_KEYS.DIAGNOSTICS_LOG,
+      STORAGE_KEYS.FEEDBACK_LOG,
     ]);
     renderDiagnostics([]);
     if (googleCountEl) googleCountEl.textContent = '0';
@@ -294,10 +303,79 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  async function loadFeedbackCount(): Promise<void> {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.FEEDBACK_LOG);
+    const entries: RecommendationFeedback[] = Array.isArray(data[STORAGE_KEYS.FEEDBACK_LOG])
+      ? data[STORAGE_KEYS.FEEDBACK_LOG]
+      : [];
+    if (feedbackCountEl) {
+      feedbackCountEl.textContent = `${entries.length} vote${entries.length === 1 ? '' : 's'}`;
+    }
+  }
+
+  copyFeedbackBtn?.addEventListener('click', async () => {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.FEEDBACK_LOG);
+    const entries: RecommendationFeedback[] = Array.isArray(data[STORAGE_KEYS.FEEDBACK_LOG])
+      ? data[STORAGE_KEYS.FEEDBACK_LOG]
+      : [];
+    if (entries.length === 0) {
+      if (copyFeedbackBtn) copyFeedbackBtn.textContent = 'No feedback yet';
+      setTimeout(() => { if (copyFeedbackBtn) copyFeedbackBtn.textContent = 'Copy Feedback'; }, 1500);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(formatFeedbackTSV(entries));
+      if (copyFeedbackBtn) {
+        copyFeedbackBtn.textContent = '✓ Copied!';
+        setTimeout(() => { if (copyFeedbackBtn) copyFeedbackBtn.textContent = 'Copy Feedback'; }, 1500);
+      }
+    } catch {
+      // Clipboard write not available
+    }
+  });
+
+  shareFeedbackBtn?.addEventListener('click', async () => {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.FEEDBACK_LOG);
+    const entries: RecommendationFeedback[] = Array.isArray(data[STORAGE_KEYS.FEEDBACK_LOG])
+      ? data[STORAGE_KEYS.FEEDBACK_LOG]
+      : [];
+    if (entries.length === 0) {
+      if (shareFeedbackBtn) shareFeedbackBtn.textContent = 'No feedback yet';
+      setTimeout(() => { if (shareFeedbackBtn) shareFeedbackBtn.textContent = 'Share Feedback'; }, 1500);
+      return;
+    }
+    const tsv = formatFeedbackTSV(entries);
+    if (FEEDBACK_APPS_SCRIPT_URL) {
+      const encoded = encodeURIComponent(tsv.slice(0, 1800));
+      openOutbound(`${FEEDBACK_APPS_SCRIPT_URL}?feedback=${encoded}`, { source: 'popup', placement: 'share-feedback' });
+    } else {
+      try {
+        await navigator.clipboard.writeText(tsv);
+        if (shareFeedbackBtn) {
+          shareFeedbackBtn.textContent = '✓ Copied to clipboard!';
+          setTimeout(() => { if (shareFeedbackBtn) shareFeedbackBtn.textContent = 'Share Feedback'; }, 1500);
+        }
+      } catch {
+        // Clipboard write not available
+      }
+    }
+  });
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes[STORAGE_KEYS.FEEDBACK_LOG]) {
+      const entries = changes[STORAGE_KEYS.FEEDBACK_LOG].newValue;
+      const count = Array.isArray(entries) ? entries.length : 0;
+      if (feedbackCountEl) {
+        feedbackCountEl.textContent = `${count} vote${count === 1 ? '' : 's'}`;
+      }
+    }
+  });
+
   await checkPermissions();
   await loadCachedScan();
   await loadAutoScanState();
   await loadDiagnostics();
+  await loadFeedbackCount();
   await recordDiagnostic({
     source: 'popup',
     level: 'info',

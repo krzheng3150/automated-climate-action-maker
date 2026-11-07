@@ -4,6 +4,7 @@ import {
   DEFAULT_SCAN_CONFIG,
   STORAGE_KEYS,
   aggregateIncrementalVisits,
+  appendFeedbackEntry,
   createDigitalFootprintSnapshot,
   createHistorySlot,
   migrateStorageState,
@@ -14,11 +15,13 @@ import {
   type HelloStats,
   type HistoryScanResult,
   type IngestionMode,
+  type RecommendationFeedback,
   type StreamStep,
   type VisitedDomainDelta,
 } from './index';
 import { checkFoodData } from './food/emissions';
 import { suggestForRecipe } from './food/suggest';
+import { REWARDS } from './rewards';
 
 /**
  * Automated Climate Action Maker (ACAM) - Background Service Worker
@@ -448,6 +451,13 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
+    if (msg.type === 'RECORD_FEEDBACK') {
+      recordFeedback(msg.payload).then((updatedStats) => {
+        sendResponse({ success: true, stats: updatedStats });
+      });
+      return true;
+    }
+
     if (message.type === 'GET_STATUS') {
       flushPendingVisits().then(() => {
         chrome.storage.local
@@ -507,4 +517,45 @@ async function handleGreeting(): Promise<HelloStats> {
     co2SavedKg: 0,
     points: 1,
   });
+}
+
+interface RecordFeedbackPayload {
+  recId: string;
+  recTitle: string;
+  vote: 'up' | 'down';
+  comment: string;
+}
+
+async function recordFeedback(payload: RecordFeedbackPayload): Promise<ACAMStats> {
+  const data = await chrome.storage.local.get([STORAGE_KEYS.FEEDBACK_LOG, STORAGE_KEYS.STATS]);
+  const existing: RecommendationFeedback[] = Array.isArray(data[STORAGE_KEYS.FEEDBACK_LOG])
+    ? data[STORAGE_KEYS.FEEDBACK_LOG]
+    : [];
+
+  const entry: RecommendationFeedback = {
+    recId: payload.recId,
+    recTitle: payload.recTitle,
+    vote: payload.vote,
+    comment: payload.comment,
+    timestamp: Date.now(),
+  };
+
+  const updated = appendFeedbackEntry(existing, entry);
+  await chrome.storage.local.set({ [STORAGE_KEYS.FEEDBACK_LOG]: updated });
+
+  const stats = await recordClimateAction({
+    actionId: `feedback_${payload.recId}`,
+    label: `Feedback: ${payload.recTitle}`,
+    co2SavedKg: REWARDS.feedbackVote.co2SavedKg,
+    points: REWARDS.feedbackVote.points,
+  });
+
+  recordDiagnostic({
+    source: 'background',
+    level: 'info',
+    event: 'FEEDBACK_RECORDED',
+    details: `${payload.recTitle}: ${payload.vote}${payload.comment ? ' + comment' : ''} (+${REWARDS.feedbackVote.points} pts)`,
+  });
+
+  return stats;
 }

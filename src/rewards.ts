@@ -7,4 +7,5 @@ export const REWARDS = {
   civicLetter: { points: 50, co2SavedKg: 0 },
   circularSearch: { points: 80, co2SavedKg: 65 },
   foodSwap: { points: 0 },
+  feedbackVote: { points: 10, co2SavedKg: 0 },
 } as const;

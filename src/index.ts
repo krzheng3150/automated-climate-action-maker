@@ -5,7 +5,7 @@
 // ============================================================================
 
 export interface ExtensionMessage<T = unknown> {
-  type: 'HELLO' | 'GET_STATUS' | 'RECORD_ACTION' | 'ANALYZE_RECIPE';
+  type: 'HELLO' | 'GET_STATUS' | 'RECORD_ACTION' | 'ANALYZE_RECIPE' | 'RECORD_FEEDBACK';
   payload?: T;
 }
 
@@ -349,6 +349,7 @@ export const STORAGE_KEYS = {
   SCHEMA_VERSION: 'schemaVersion',
   PENDING_VISITS: 'pendingVisits',
   DIAGNOSTICS_LOG: 'diagnosticsLog',
+  FEEDBACK_LOG: 'feedbackLog',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
@@ -680,4 +681,40 @@ export function computeRecommendations(
   }
 
   return recommendations;
+}
+
+// ============================================================================
+// 11. Recommendation Feedback
+// ============================================================================
+
+export interface RecommendationFeedback {
+  recId: string;
+  recTitle: string;
+  vote: 'up' | 'down';
+  comment: string;
+  timestamp: number;
+}
+
+export const MAX_FEEDBACK_ENTRIES = 200;
+
+export const FEEDBACK_APPS_SCRIPT_URL = '';
+
+export function appendFeedbackEntry(
+  existing: RecommendationFeedback[],
+  entry: RecommendationFeedback,
+  max = MAX_FEEDBACK_ENTRIES
+): RecommendationFeedback[] {
+  const updated = [...existing, entry];
+  return updated.length > max ? updated.slice(updated.length - max) : updated;
+}
+
+export function formatFeedbackTSV(entries: RecommendationFeedback[]): string {
+  const header = 'Date\tRecommendation\tVote\tComment';
+  const rows = entries.map((e) => {
+    const date = new Date(e.timestamp).toISOString().slice(0, 10);
+    const vote = e.vote === 'up' ? 'Yes' : 'No';
+    const comment = e.comment.replace(/\t/g, ' ').replace(/\n/g, ' ');
+    return `${date}\t${e.recTitle}\t${vote}\t${comment}`;
+  });
+  return [header, ...rows].join('\n');
 }

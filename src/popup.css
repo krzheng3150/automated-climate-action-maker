@@ -560,6 +560,36 @@ footer {
   color: #dc2626;
 }
 
+/* Feedback Section */
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.feedback-section-desc {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.feedback-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.diag-btn-share {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.diag-btn-share:hover {
+  background: #dbeafe;
+}
+
 .privacy-note {
   font-size: 10px;
   color: #94a3b8;
