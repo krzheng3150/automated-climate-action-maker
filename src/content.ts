@@ -1,7 +1,7 @@
 /// <reference types="chrome" />
 
 import { recordDiagnostic, type ExtensionMessage } from './index';
-import { buildSearchUrl, openOutbound, partnersInGroup } from './outbound';
+import { buildSearchUrl, openOutbound, partnersInGroup, type OutboundPartner } from './outbound';
 import { detectRecipe } from './recipe-detect';
 import { REWARDS } from './rewards';
 import type { RecipeSuggestionView } from './food/suggest';
@@ -12,6 +12,46 @@ import type { RecipeSuggestionView } from './food/suggest';
  * using isolated Shadow DOM and safe DOM manipulation (Zero innerHTML interpolation).
  */
 type ScenarioType = 'scenario-a' | 'scenario-c';
+type ProductCategory = 'electronics' | 'fashion' | 'books' | 'home';
+
+interface CategoryConfig {
+  group: NonNullable<OutboundPartner['group']>;
+  badge: string;
+  title: string;
+  description: string;
+  co2Note: string;
+}
+
+const CATEGORY_CONFIG: Record<ProductCategory, CategoryConfig> = {
+  electronics: {
+    group: 'circular_marketplace',
+    badge: '♻️ Compare Circular Options',
+    title: 'Find Refurbished Alternatives',
+    description: 'Manufacturing accounts for ~80% of electronics emissions. Compare verified second-life options to avoid high factory carbon.',
+    co2Note: 'Save up to ~65 kg CO₂e',
+  },
+  fashion: {
+    group: 'secondhand_fashion',
+    badge: '♻️ Shop Secondhand',
+    title: 'Find Pre-Loved Alternatives',
+    description: 'The fashion industry produces ~10% of global carbon emissions. Buying secondhand extends garment life and skips new production.',
+    co2Note: 'Save up to ~20 kg CO₂e per garment',
+  },
+  books: {
+    group: 'used_books',
+    badge: '📚 Buy Used',
+    title: 'Find Used Copies',
+    description: 'A new book produces ~7 kg CO₂e in paper, printing, and shipping. Used books skip all of that.',
+    co2Note: 'Save up to ~7 kg CO₂e',
+  },
+  home: {
+    group: 'secondhand_home',
+    badge: '♻️ Shop Pre-Owned',
+    title: 'Find Secondhand Alternatives',
+    description: 'Furniture manufacturing has a significant carbon footprint. Pre-owned pieces skip the factory entirely.',
+    co2Note: 'Avoid manufacturing emissions',
+  },
+};
 
 const FOOD_STYLES = `
       .detail-list {
@@ -175,6 +215,27 @@ class ACAMContentScript {
       hostname.includes('target.com') ||
       hostname.includes('bestbuy.com') ||
       hostname.includes('apple.com') ||
+      hostname.includes('newegg.com') ||
+      hostname.includes('bhphotovideo.com') ||
+      hostname.includes('nordstrom.com') ||
+      hostname.includes('macys.com') ||
+      hostname.includes('hm.com') ||
+      hostname.includes('zara.com') ||
+      hostname.includes('nike.com') ||
+      hostname.includes('gap.com') ||
+      hostname.includes('oldnavy.com') ||
+      hostname.includes('asos.com') ||
+      hostname.includes('shein.com') ||
+      hostname.includes('uniqlo.com') ||
+      hostname.includes('forever21.com') ||
+      hostname.includes('lululemon.com') ||
+      hostname.includes('barnesandnoble.com') ||
+      hostname.includes('wayfair.com') ||
+      hostname.includes('ikea.com') ||
+      hostname.includes('potterybarn.com') ||
+      hostname.includes('crateandbarrel.com') ||
+      hostname.includes('westelm.com') ||
+      hostname.includes('overstock.com') ||
       pathname.includes('/dp/') ||
       pathname.includes('/ip/') ||
       pathname.includes('/product') ||
@@ -253,6 +314,36 @@ class ACAMContentScript {
       .split(/\s+/)
       .slice(0, 5) // Retain brand + primary model tokens
       .join(' ');
+  }
+
+  private detectProductCategory(): ProductCategory {
+    const hostname = window.location.hostname.toLowerCase();
+    const pathname = window.location.pathname.toLowerCase();
+
+    if (hostname.includes('bestbuy.com') || hostname.includes('apple.com') ||
+        hostname.includes('newegg.com') || hostname.includes('bhphotovideo.com')) {
+      return 'electronics';
+    }
+    if (hostname.includes('nordstrom.com') || hostname.includes('macys.com') ||
+        hostname.includes('hm.com') || hostname.includes('zara.com') ||
+        hostname.includes('nike.com') || hostname.includes('gap.com') ||
+        hostname.includes('oldnavy.com') || hostname.includes('asos.com') ||
+        hostname.includes('shein.com') || hostname.includes('uniqlo.com') ||
+        hostname.includes('forever21.com') || hostname.includes('lululemon.com')) {
+      return 'fashion';
+    }
+    if (hostname.includes('barnesandnoble.com')) return 'books';
+    if (hostname.includes('wayfair.com') || hostname.includes('ikea.com') ||
+        hostname.includes('potterybarn.com') || hostname.includes('crateandbarrel.com') ||
+        hostname.includes('westelm.com') || hostname.includes('overstock.com')) {
+      return 'home';
+    }
+
+    if (/\/(?:clothing|fashion|shoes|apparel|womens|mens)(?:\/|$)/.test(pathname)) return 'fashion';
+    if (/\/(?:books|kindle|audiobooks)(?:\/|$)/.test(pathname)) return 'books';
+    if (/\/(?:furniture|home-?decor|patio|bed-bath)(?:\/|$)/.test(pathname)) return 'home';
+
+    return 'electronics';
   }
 
   private fire(scenario: ScenarioType): void {
@@ -413,9 +504,12 @@ class ACAMContentScript {
     const header = document.createElement('div');
     header.className = 'acam-header';
 
+    const category = scenario === 'scenario-c' ? this.detectProductCategory() : null;
+    const catConfig = category ? CATEGORY_CONFIG[category] : null;
+
     const badge = document.createElement('span');
     badge.className = `pill-badge ${scenario === 'scenario-a' ? 'active-civic' : 'passive-eco'}`;
-    badge.textContent = scenario === 'scenario-a' ? '🏛️ Civic Action Nudge' : '♻️ Compare Circular Options';
+    badge.textContent = scenario === 'scenario-a' ? '🏛️ Civic Action Nudge' : (catConfig?.badge ?? '♻️ Compare Circular Options');
 
     const closeBtn = document.createElement('button');
     closeBtn.id = 'close-btn';
@@ -429,7 +523,7 @@ class ACAMContentScript {
     const titleEl = document.createElement('div');
     titleEl.className = 'title';
     titleEl.textContent =
-      scenario === 'scenario-a' ? 'Turn Climate Anxiety into Action' : 'Find Refurbished Alternatives';
+      scenario === 'scenario-a' ? 'Turn Climate Anxiety into Action' : (catConfig?.title ?? 'Find Refurbished Alternatives');
     card.appendChild(titleEl);
 
     const descEl = document.createElement('p');
@@ -437,7 +531,7 @@ class ACAMContentScript {
     descEl.textContent =
       scenario === 'scenario-a'
         ? 'Reading climate policy? Send a 1-click prompt to your local representative supporting regional clean energy transition.'
-        : 'Manufacturing accounts for ~80% of electronics emissions. Compare verified second-life options to avoid high factory carbon.';
+        : (catConfig?.description ?? 'Manufacturing accounts for ~80% of electronics emissions. Compare verified second-life options to avoid high factory carbon.');
     card.appendChild(descEl);
 
     const snippetEl = document.createElement('div');
@@ -486,9 +580,9 @@ class ACAMContentScript {
       });
     } else {
       const productTitle = this.extractProductTitle();
-      snippetEl.textContent = `Target: ${productTitle} (Save up to ~65 kg CO₂e)`;
+      snippetEl.textContent = `Target: ${productTitle} (${catConfig?.co2Note ?? 'Save up to ~65 kg CO₂e'})`;
 
-      for (const provider of partnersInGroup('circular_marketplace')) {
+      for (const provider of partnersInGroup(catConfig?.group ?? 'circular_marketplace')) {
         const btn = document.createElement('button');
         btn.className = 'btn circular-btn';
         btn.textContent = provider.name;

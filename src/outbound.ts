@@ -21,7 +21,7 @@ export interface OutboundPartner {
   params?: Record<string, string>;
   /** Tagging stays off until the partner programme is approved and real IDs are filled in. */
   enabled: boolean;
-  group?: 'circular_marketplace';
+  group?: 'circular_marketplace' | 'secondhand_fashion' | 'used_books' | 'secondhand_home';
   /** Search URL with a `{query}` placeholder, filled with the encoded user query. */
   searchTemplate?: string;
 }
@@ -53,6 +53,72 @@ export const OUTBOUND_PARTNERS: OutboundPartner[] = [
     enabled: false,
     group: 'circular_marketplace',
     searchTemplate: 'https://swappa.com/search?q={query}',
+  },
+  // Secondhand fashion
+  {
+    id: 'thredup',
+    name: 'ThredUp',
+    hosts: ['thredup.com'],
+    mode: 'none',
+    enabled: false,
+    group: 'secondhand_fashion',
+    searchTemplate: 'https://www.thredup.com/search?search_text={query}',
+  },
+  {
+    id: 'poshmark',
+    name: 'Poshmark',
+    hosts: ['poshmark.com'],
+    mode: 'none',
+    enabled: false,
+    group: 'secondhand_fashion',
+    searchTemplate: 'https://poshmark.com/search?query={query}&type=listings',
+  },
+  {
+    id: 'depop',
+    name: 'Depop',
+    hosts: ['depop.com'],
+    mode: 'none',
+    enabled: false,
+    group: 'secondhand_fashion',
+    searchTemplate: 'https://www.depop.com/search/?q={query}',
+  },
+  // Used books
+  {
+    id: 'thriftbooks',
+    name: 'ThriftBooks',
+    hosts: ['thriftbooks.com'],
+    mode: 'none',
+    enabled: false,
+    group: 'used_books',
+    searchTemplate: 'https://www.thriftbooks.com/browse/?b.search={query}',
+  },
+  {
+    id: 'betterworldbooks',
+    name: 'Better World Books',
+    hosts: ['betterworldbooks.com'],
+    mode: 'none',
+    enabled: false,
+    group: 'used_books',
+    searchTemplate: 'https://www.betterworldbooks.com/search/results?q={query}',
+  },
+  // Secondhand home & furniture
+  {
+    id: 'chairish',
+    name: 'Chairish',
+    hosts: ['chairish.com'],
+    mode: 'none',
+    enabled: false,
+    group: 'secondhand_home',
+    searchTemplate: 'https://www.chairish.com/search?q={query}',
+  },
+  {
+    id: 'aptdeco',
+    name: 'AptDeco',
+    hosts: ['aptdeco.com'],
+    mode: 'none',
+    enabled: false,
+    group: 'secondhand_home',
+    searchTemplate: 'https://www.aptdeco.com/search?query={query}',
   },
 ];
 

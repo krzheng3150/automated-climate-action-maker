@@ -105,6 +105,39 @@ for (const partner of circular) {
   );
 }
 
+const fashion = partnersInGroup('secondhand_fashion');
+assert(fashion.length === 3, 'Secondhand fashion group has ThredUp, Poshmark, Depop');
+for (const partner of fashion) {
+  const url = buildSearchUrl(partner, 'Levi 501 jeans');
+  const built = buildOutboundUrl(url);
+  assert(
+    built !== null && built.partnerId === partner.id && url.includes(encodeURIComponent('Levi 501 jeans')),
+    `${partner.name}: search URL resolves with encoded query`
+  );
+}
+
+const books = partnersInGroup('used_books');
+assert(books.length === 2, 'Used books group has ThriftBooks, Better World Books');
+for (const partner of books) {
+  const url = buildSearchUrl(partner, 'Thinking Fast and Slow');
+  const built = buildOutboundUrl(url);
+  assert(
+    built !== null && built.partnerId === partner.id && url.includes(encodeURIComponent('Thinking Fast and Slow')),
+    `${partner.name}: search URL resolves with encoded query`
+  );
+}
+
+const home = partnersInGroup('secondhand_home');
+assert(home.length === 2, 'Secondhand home group has Chairish, AptDeco');
+for (const partner of home) {
+  const url = buildSearchUrl(partner, 'mid century desk');
+  const built = buildOutboundUrl(url);
+  assert(
+    built !== null && built.partnerId === partner.id && url.includes(encodeURIComponent('mid century desk')),
+    `${partner.name}: search URL resolves with encoded query`
+  );
+}
+
 console.log('----------------------------------------------------');
 if (failures > 0) {
   console.error(`[Test: Outbound Helper] FAILED with ${failures} failure(s).`);
