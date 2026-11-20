@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
 
-import { recordDiagnostic, type ExtensionMessage } from './index';
+import { recordDiagnostic, resolveNudgeCooldown, STORAGE_KEYS, type ExtensionMessage } from './index';
 import { buildSearchUrl, openOutbound, partnersInGroup, type OutboundPartner } from './outbound';
 import { detectRecipe } from './recipe-detect';
 import { REWARDS } from './rewards';
@@ -13,6 +13,19 @@ import type { RecipeSuggestionView } from './food/suggest';
  */
 type ScenarioType = 'scenario-a' | 'scenario-c';
 type ProductCategory = 'electronics' | 'fashion' | 'books' | 'home';
+
+const DEFAULT_COOLDOWN_HOURS = 22;
+
+const FREQUENCY_PRESETS = [
+  { label: '22h', hours: 22 },
+  { label: '3d', hours: 72 },
+  { label: '7d', hours: 168 },
+  { label: '30d', hours: 720 },
+  { label: 'Off', hours: -1 },
+] as const;
+
+type NudgeCooldowns = Partial<Record<ProductCategory, number>>;
+type NudgeCategoryOverrides = Partial<Record<ProductCategory, number>>;
 
 interface CategoryConfig {
   group: NonNullable<OutboundPartner['group']>;
@@ -267,10 +280,20 @@ class ACAMContentScript {
         }
       }, 4000);
     } else {
-      setTimeout(() => {
-        if (!this.triggered) {
-          this.fire(scenario);
+      setTimeout(async () => {
+        if (this.triggered) return;
+        const category = this.detectProductCategory();
+        const allowed = await this.checkCooldown(category);
+        if (!allowed) {
+          recordDiagnostic({
+            source: 'content',
+            level: 'info',
+            event: 'NUDGE_SUPPRESSED',
+            details: `Cooldown active for ${category}`,
+          });
+          return;
         }
+        this.fire(scenario);
       }, 1200);
     }
   }
@@ -344,6 +367,86 @@ class ACAMContentScript {
     if (/\/(?:furniture|home-?decor|patio|bed-bath)(?:\/|$)/.test(pathname)) return 'home';
 
     return 'electronics';
+  }
+
+  private async checkCooldown(category: ProductCategory): Promise<boolean> {
+    const data = await chrome.storage.local.get([
+      STORAGE_KEYS.NUDGE_COOLDOWNS,
+      STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES,
+    ]);
+    return resolveNudgeCooldown({
+      category,
+      now: Date.now(),
+      cooldowns: data[STORAGE_KEYS.NUDGE_COOLDOWNS] ?? {},
+      overrides: data[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {},
+    });
+  }
+
+  private async recordNudgeShown(category: ProductCategory): Promise<void> {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_COOLDOWNS);
+    const cooldowns: NudgeCooldowns = data[STORAGE_KEYS.NUDGE_COOLDOWNS] ?? {};
+    cooldowns[category] = Date.now();
+    await chrome.storage.local.set({ [STORAGE_KEYS.NUDGE_COOLDOWNS]: cooldowns });
+  }
+
+  private async setFrequencyOverride(category: ProductCategory, hours: number): Promise<void> {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES);
+    const overrides: NudgeCategoryOverrides = data[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {};
+    overrides[category] = hours;
+    await chrome.storage.local.set({ [STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES]: overrides });
+  }
+
+  private buildFrequencyDial(category: ProductCategory): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'frequency-row';
+
+    const label = document.createElement('span');
+    label.className = 'frequency-label';
+    label.textContent = 'Notify every';
+    row.appendChild(label);
+
+    const dial = document.createElement('div');
+    dial.className = 'frequency-dial';
+
+    const loadActive = async () => {
+      const data = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES);
+      const overrides: NudgeCategoryOverrides = data[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {};
+      return overrides[category] ?? DEFAULT_COOLDOWN_HOURS;
+    };
+
+    for (const preset of FREQUENCY_PRESETS) {
+      const btn = document.createElement('button');
+      btn.className = `freq-btn${preset.hours === -1 ? ' off' : ''}`;
+      btn.textContent = preset.label;
+
+      loadActive().then((active) => {
+        if (preset.hours === active) btn.classList.add('active');
+      });
+
+      btn.addEventListener('click', () => {
+        for (const sibling of dial.querySelectorAll('.freq-btn')) {
+          sibling.classList.remove('active');
+        }
+        btn.classList.add('active');
+
+        this.setFrequencyOverride(category, preset.hours);
+        recordDiagnostic({
+          source: 'content',
+          level: 'info',
+          event: 'NUDGE_FREQUENCY_CHANGED',
+          details: `Category: ${category}, set to: ${preset.label} (${preset.hours}h)`,
+        });
+
+        if (preset.hours === -1) {
+          setTimeout(() => this.removePrompt(), 600);
+        }
+      });
+
+      dial.appendChild(btn);
+    }
+
+    row.appendChild(dial);
+    return row;
   }
 
   private fire(scenario: ScenarioType): void {
@@ -484,6 +587,49 @@ class ACAMContentScript {
         font-size: 11px;
         color: #047857;
       }
+      .frequency-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid #e5e7eb;
+      }
+      .frequency-label {
+        font-size: 10px;
+        color: #9ca3af;
+        white-space: nowrap;
+      }
+      .frequency-dial {
+        display: flex;
+        gap: 4px;
+        flex: 1;
+      }
+      .freq-btn {
+        flex: 1;
+        padding: 3px 0;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background: #f9fafb;
+        color: #6b7280;
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.15s ease;
+      }
+      .freq-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+      .freq-btn.active {
+        background: #ecfdf5;
+        border-color: #10b981;
+        color: #065f46;
+      }
+      .freq-btn.off { color: #ef4444; }
+      .freq-btn.off.active {
+        background: #fef2f2;
+        border-color: #f87171;
+        color: #dc2626;
+      }
     ` + FOOD_STYLES;
   }
 
@@ -543,6 +689,16 @@ class ACAMContentScript {
     actionContainer.className = 'action-row';
     card.appendChild(actionContainer);
 
+    if (scenario === 'scenario-c' && category) {
+      this.recordNudgeShown(category);
+      recordDiagnostic({
+        source: 'content',
+        level: 'info',
+        event: 'NUDGE_SHOWN',
+        details: `Category: ${category}`,
+      });
+    }
+
     if (scenario === 'scenario-a') {
       snippetEl.textContent = 'Finding relevant climate actions for your region...';
 
@@ -589,13 +745,30 @@ class ACAMContentScript {
         const targetUrl = buildSearchUrl(provider, productTitle);
 
         btn.addEventListener('click', () => {
+          recordDiagnostic({
+            source: 'content',
+            level: 'info',
+            event: 'NUDGE_CLICKED',
+            details: `Category: ${category}, partner: ${provider.name}`,
+          });
           this.executeCircularRedirect(targetUrl, provider.name, card);
         });
         actionContainer.appendChild(btn);
       }
+
+      const freqRow = this.buildFrequencyDial(category!);
+      card.appendChild(freqRow);
     }
 
     closeBtn.addEventListener('click', () => {
+      if (category) {
+        recordDiagnostic({
+          source: 'content',
+          level: 'info',
+          event: 'NUDGE_DISMISSED',
+          details: `Category: ${category}`,
+        });
+      }
       this.removePrompt();
     });
 

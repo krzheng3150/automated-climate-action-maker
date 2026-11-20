@@ -590,6 +590,77 @@ footer {
   background: #dbeafe;
 }
 
+/* Nudge Settings */
+.nudge-settings {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.nudge-settings-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.nudge-overrides-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nudge-override-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #f1f5f9;
+}
+
+.nudge-override-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.nudge-override-category {
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  text-transform: capitalize;
+}
+
+.nudge-override-value {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.nudge-override-value.disabled {
+  color: #ef4444;
+}
+
+.nudge-reset-btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.nudge-reset-btn:hover {
+  background: #f1f5f9;
+}
+
+.nudge-empty {
+  font-size: 10px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
 .privacy-note {
   font-size: 10px;
   color: #94a3b8;

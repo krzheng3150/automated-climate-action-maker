@@ -351,9 +351,32 @@ export const STORAGE_KEYS = {
   DIAGNOSTICS_LOG: 'diagnosticsLog',
   FEEDBACK_LOG: 'feedbackLog',
   USER_REGION_OVERRIDE: 'userRegionOverride',
+  NUDGE_COOLDOWNS: 'nudgeCooldowns',
+  NUDGE_CATEGORY_OVERRIDES: 'nudgeCategoryOverrides',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+
+// ============================================================================
+// 7.1. Nudge Cooldown Resolution (Pure, Browser-Agnostic)
+// ============================================================================
+
+export const DEFAULT_NUDGE_COOLDOWN_HOURS = 22;
+
+export interface NudgeCooldownInput {
+  category: string;
+  now: number;
+  cooldowns: Record<string, number>;
+  overrides: Record<string, number>;
+}
+
+export function resolveNudgeCooldown(input: NudgeCooldownInput): boolean {
+  const cooldownHours = input.overrides[input.category] ?? DEFAULT_NUDGE_COOLDOWN_HOURS;
+  if (cooldownHours === -1) return false;
+  const lastShown = input.cooldowns[input.category];
+  if (!lastShown) return true;
+  return input.now - lastShown >= cooldownHours * 60 * 60 * 1000;
+}
 
 // ============================================================================
 // 8.1. Browser-Agnostic Diagnostics Architecture (Zero Host Console Pollution)

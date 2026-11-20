@@ -134,6 +134,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  const nudgeOverridesListEl = document.getElementById('nudge-overrides-list') as HTMLElement | null;
+
+  function formatCooldown(hours: number): string {
+    if (hours === -1) return 'Disabled';
+    if (hours < 24) return `Every ${hours}h`;
+    const days = Math.round(hours / 24);
+    return `Every ${days}d`;
+  }
+
+  async function loadNudgeOverrides(): Promise<void> {
+    if (!nudgeOverridesListEl) return;
+    const data = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES);
+    const overrides: Record<string, number> = data[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {};
+    const entries = Object.entries(overrides);
+
+    if (entries.length === 0) {
+      const empty = document.createElement('span');
+      empty.className = 'nudge-empty';
+      empty.textContent = 'Default (every 22h) — adjust from nudge cards';
+      nudgeOverridesListEl.replaceChildren(empty);
+      return;
+    }
+
+    const rows = entries.map(([category, hours]) => {
+      const row = document.createElement('div');
+      row.className = 'nudge-override-row';
+
+      const info = document.createElement('div');
+      info.className = 'nudge-override-info';
+
+      const catLabel = document.createElement('span');
+      catLabel.className = 'nudge-override-category';
+      catLabel.textContent = category;
+
+      const valLabel = document.createElement('span');
+      valLabel.className = `nudge-override-value${hours === -1 ? ' disabled' : ''}`;
+      valLabel.textContent = formatCooldown(hours);
+
+      info.appendChild(catLabel);
+      info.appendChild(valLabel);
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'nudge-reset-btn';
+      resetBtn.textContent = 'Reset';
+      resetBtn.addEventListener('click', async () => {
+        const fresh = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES);
+        const current: Record<string, number> = fresh[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {};
+        delete current[category];
+        await chrome.storage.local.set({ [STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES]: current });
+        await loadNudgeOverrides();
+      });
+
+      row.appendChild(info);
+      row.appendChild(resetBtn);
+      return row;
+    });
+
+    nudgeOverridesListEl.replaceChildren(...rows);
+  }
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES]) {
+      loadNudgeOverrides();
+    }
+  });
+
   async function loadAutoScanState(): Promise<void> {
     if (!autoScanToggle) return;
     const data = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
@@ -287,6 +353,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.DIAGNOSTICS_LOG,
       STORAGE_KEYS.FEEDBACK_LOG,
       STORAGE_KEYS.USER_REGION_OVERRIDE,
+      STORAGE_KEYS.NUDGE_COOLDOWNS,
+      STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES,
     ]);
     renderDiagnostics([]);
     if (googleCountEl) googleCountEl.textContent = '0';
@@ -375,6 +443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkPermissions();
   await loadCachedScan();
   await loadAutoScanState();
+  await loadNudgeOverrides();
   await loadDiagnostics();
   await loadFeedbackCount();
   await recordDiagnostic({
