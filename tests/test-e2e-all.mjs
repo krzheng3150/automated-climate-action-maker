@@ -72,12 +72,12 @@ try {
   await pageC.waitForFunction(
     () => {
       const h = document.getElementById('acam-overlay-host');
-      return Boolean(h?.shadowRoot?.querySelector('.success-title'));
+      return Boolean(h?.shadowRoot?.querySelector('.circular-btn.clicked'));
     },
     { timeout: 4000 }
   );
-  const successC = await shadowC.$eval('.success-title', (el) => el.textContent);
-  console.log('[3/4] Scenario C circular interaction succeeded:', successC);
+  const clickedText = await shadowC.$eval('.circular-btn.clicked', (el) => el.textContent);
+  console.log('[3/4] Scenario C circular interaction succeeded:', clickedText);
 
   // 3b. Food: a recipe page gets one swap card, computed in the background from the page's own text
   const fixture = (name) => readFileSync(path.join(testsDir, 'fixtures', 'pages', name), 'utf8');
