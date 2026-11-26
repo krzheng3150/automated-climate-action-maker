@@ -210,6 +210,17 @@ const RETAILER_DOMAINS = new Set([
   'asos.com', 'shein.com', 'aliexpress.com',
 ]);
 
+const BRAND_DIRECT_SITES = new Set([
+  'nike.com', 'adidas.com', 'apple.com', 'samsung.com', 'sony.com',
+  'dyson.com', 'bose.com', 'lululemon.com', 'patagonia.com',
+  'northface.com', 'underarmour.com', 'newbalance.com', 'asics.com',
+  'brooks.com', 'allbirds.com', 'bombas.com', 'everlane.com',
+  'tesla.com', 'peloton.com', 'yeti.com', 'hydroflask.com',
+  'levis.com', 'gap.com', 'coach.com', 'katespade.com',
+  'dell.com', 'hp.com', 'lenovo.com', 'asus.com', 'msi.com',
+  'lg.com', 'whirlpool.com', 'kitchenaid.com',
+]);
+
 const SHOPPING_PATH_KEYWORDS = new Set([
   'product', 'products', 'shop', 'buy', 'cart', 'checkout',
   'store', 'catalog', 'category', 'departments',
@@ -309,6 +320,8 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
   // Deduplicate by domain + first path segment
   const seen = new Set<string>();
   let processed = 0;
+  let brandDirectHits = 0;
+  let retailerHits = 0;
 
   for (const item of items) {
     if (!item.url || SKIP_SCHEMES.test(item.url)) continue;
@@ -338,7 +351,8 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
     const domainBase = hostname.replace(/^www\./, '');
     if (COMPARISON_SITES.has(domainBase)) comparisonSites.add(domainBase);
     if (SECONDHAND_SITES.has(domainBase)) secondhandSites.add(domainBase);
-    if (RETAILER_DOMAINS.has(domainBase)) retailers.add(domainBase);
+    if (RETAILER_DOMAINS.has(domainBase)) { retailers.add(domainBase); retailerHits++; }
+    if (BRAND_DIRECT_SITES.has(domainBase)) brandDirectHits++;
 
     // Check for subreddit signals (r/frugal, r/buyitforlife, etc.)
     if (hostname.includes('reddit.com') && pathParts[0] === 'r') {
@@ -387,13 +401,21 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
   const comparisonCount = comparisonSites.size;
   const secondhandCount = secondhandSites.size;
   const retailerCount = retailers.size;
+  const costHits = motivators.cost;
 
-  let traitFlexibility = 0.2; // baseline
-  traitFlexibility += Math.min(0.3, comparisonCount * 0.1);
-  traitFlexibility += Math.min(0.3, secondhandCount * 0.1);
-  traitFlexibility += Math.min(0.2, (retailerCount > 3 ? (retailerCount - 3) * 0.04 : 0));
-  if (motivators.cost > 5) traitFlexibility += 0.1;
-  traitFlexibility = Math.min(1, traitFlexibility);
+  let traitFlexibility = 0.35; // baseline: just above nudge threshold (0.3)
+
+  // Flexibility signals
+  traitFlexibility += Math.min(0.25, comparisonCount * 0.08);
+  traitFlexibility += Math.min(0.25, secondhandCount * 0.08);
+  traitFlexibility += Math.min(0.15, (retailerCount > 2 ? (retailerCount - 2) * 0.03 : 0));
+  if (costHits >= 2) traitFlexibility += Math.min(0.12, costHits * 0.015);
+
+  // Inflexibility signals
+  if (retailerHits > 0 && brandDirectHits / retailerHits > 0.5) traitFlexibility -= 0.15;
+  if (comparisonCount === 0) traitFlexibility -= 0.05;
+
+  traitFlexibility = Math.min(1, Math.max(0.05, traitFlexibility));
 
   // Recent categories: those with hits from 2+ different domains
   const recentCategories = [...categoryHits.entries()]
