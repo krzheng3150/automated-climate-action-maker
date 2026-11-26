@@ -261,3 +261,7 @@ export function openOutbound(rawUrl: string, context: OutboundContext): boolean 
   }
   return true;
 }
+
+export function openExtensionPage(page: string): void {
+  chrome.tabs.create({ url: chrome.runtime.getURL(page) });
+}

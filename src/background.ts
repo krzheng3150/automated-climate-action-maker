@@ -28,6 +28,7 @@ import { estimateUserLocation } from './civic/location';
 import { extractBrowsingProfile } from './browsing';
 import type { ToneTag } from './browsing/profile';
 import { REWARDS } from './rewards';
+import { openExtensionPage } from './outbound';
 
 /**
  * Automated Climate Action Maker (ACAM) - Background Service Worker
@@ -269,7 +270,10 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
   }
 });
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'install') {
+    openExtensionPage('welcome.html');
+  }
   reportFoodDataStatus();
   await runStorageMigration();
   const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);

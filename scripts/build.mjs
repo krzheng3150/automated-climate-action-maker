@@ -45,7 +45,7 @@ function copyStaticFiles() {
   }
 
   // Copy popup static assets from src/
-  for (const file of ['popup.html', 'popup.css']) {
+  for (const file of ['popup.html', 'popup.css', 'welcome.html']) {
     const srcPath = path.join(projectRoot, 'src', file);
     if (existsSync(srcPath)) {
       copyFileSync(srcPath, path.join(distDir, file));
