@@ -12,6 +12,7 @@ console.log('[Guardrails: Runtime] Launching headless browser to test runtime se
 
 const browser = await puppeteer.launch({
   headless: 'new',
+  protocolTimeout: 60000,
   args: [
     `--disable-extensions-except=${extensionPath}`,
     `--load-extension=${extensionPath}`,
@@ -19,6 +20,13 @@ const browser = await puppeteer.launch({
     '--disable-setuid-sandbox',
   ],
 });
+
+function timedEvaluate(page, fn, timeoutMs = 15000) {
+  return Promise.race([
+    page.evaluate(fn),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('evaluate timed out')), timeoutMs)),
+  ]);
+}
 
 let failures = 0;
 
@@ -42,6 +50,14 @@ try {
   const extensionId = new URL(extensionUrl).host;
   reportPass(`Extension initialized with ID: ${extensionId}`);
 
+  // Close any tabs the extension opened on install (e.g. welcome page)
+  await new Promise((r) => setTimeout(r, 1500));
+  const existingPages = await browser.pages();
+  for (const p of existingPages) {
+    const u = p.url();
+    if (u.includes('welcome.html')) await p.close();
+  }
+
   // -------------------------------------------------------------
   // GUARDRAIL 1: Zero Outbound Network Requests During History Stream
   // -------------------------------------------------------------
@@ -57,7 +73,8 @@ try {
   });
 
   const popupUrl = `chrome-extension://${extensionId}/popup.html`;
-  await popupPage.goto(popupUrl, { waitUntil: 'networkidle0' });
+  await popupPage.goto(popupUrl, { waitUntil: 'domcontentloaded' });
+  await new Promise((r) => setTimeout(r, 800));
 
   // Initiate scan and monitor network
   const startTime = Date.now();
@@ -95,7 +112,7 @@ try {
   // -------------------------------------------------------------
   // GUARDRAIL 2B: DigitalFootprintSnapshot Schema & Governance Contract
   // -------------------------------------------------------------
-  const snapshotData = await popupPage.evaluate(async () => {
+  const snapshotData = await timedEvaluate(popupPage, async () => {
     return await chrome.storage.local.get('footprintSnapshot');
   });
   const snapshot = snapshotData.footprintSnapshot;
@@ -114,7 +131,7 @@ try {
   // -------------------------------------------------------------
   // GUARDRAIL 2C: Conservative Fallback Alarm & Toggle Sync
   // -------------------------------------------------------------
-  const initialAlarm = await popupPage.evaluate(async () => {
+  const initialAlarm = await timedEvaluate(popupPage, async () => {
     return await chrome.alarms.get('acam-conservative-sync');
   });
   if (initialAlarm && initialAlarm.name === 'acam-conservative-sync') {
@@ -124,13 +141,13 @@ try {
   }
 
   // Toggle Auto-Scan OFF
-  await popupPage.evaluate(() => {
+  await timedEvaluate(popupPage, () => {
     const el = document.getElementById('auto-scan-toggle');
     el?.click();
   });
   await new Promise((r) => setTimeout(r, 200));
 
-  const alarmAfterToggleOff = await popupPage.evaluate(async () => {
+  const alarmAfterToggleOff = await timedEvaluate(popupPage, async () => {
     const storage = await chrome.storage.local.get('autoScanEnabled');
     const alarm = await chrome.alarms.get('acam-conservative-sync');
     return { autoScanEnabled: storage.autoScanEnabled, alarmPresent: Boolean(alarm) };
@@ -146,7 +163,7 @@ try {
   }
 
   // Toggle Auto-Scan back ON
-  await popupPage.evaluate(() => {
+  await timedEvaluate(popupPage, () => {
     const el = document.getElementById('auto-scan-toggle');
     el?.click();
   });
@@ -157,7 +174,7 @@ try {
   // -------------------------------------------------------------
   await popupPage.click('#purge-btn');
   const totalCountAfterPurge = await popupPage.$eval('#total-count', (el) => el.textContent);
-  const storageAfterPurge = await popupPage.evaluate(async () => {
+  const storageAfterPurge = await timedEvaluate(popupPage, async () => {
     return await chrome.storage.local.get(['lastHistoryScan', 'footprintSnapshot']);
   });
   if (totalCountAfterPurge === '0' && !storageAfterPurge.lastHistoryScan && !storageAfterPurge.footprintSnapshot) {

@@ -13,6 +13,7 @@ console.log('[E2E Regression Check] Testing all extension subsystems...');
 
 const browser = await puppeteer.launch({
   headless: 'new',
+  protocolTimeout: 60000,
   args: [
     `--disable-extensions-except=${extensionPath}`,
     `--load-extension=${extensionPath}`,
@@ -31,6 +32,13 @@ try {
   );
   const extensionId = new URL(workerTarget.url()).host;
   console.log('[1/4] Background worker active with ID:', extensionId);
+
+  // Close any tabs the extension opened on install (e.g. welcome page)
+  const existingPages = await browser.pages();
+  for (const p of existingPages) {
+    const u = p.url();
+    if (u.includes('welcome.html')) await p.close();
+  }
 
   // 2. Test Scenario A (Civic Action Overlay)
   const pageA = await newOfflinePage(browser);
