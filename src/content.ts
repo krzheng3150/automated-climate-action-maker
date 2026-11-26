@@ -392,14 +392,14 @@ class ACAMContentScript {
     const data = await chrome.storage.local.get([
       STORAGE_KEYS.NUDGE_COOLDOWNS,
       STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES,
-      STORAGE_KEYS.NUDGE_ALWAYS_ON,
+      STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY,
     ]);
     return resolveNudgeCooldown({
       category,
       now: Date.now(),
       cooldowns: data[STORAGE_KEYS.NUDGE_COOLDOWNS] ?? {},
       overrides: data[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {},
-      alwaysOn: data[STORAGE_KEYS.NUDGE_ALWAYS_ON] === true,
+      globalFrequencyHours: data[STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY],
     });
   }
 

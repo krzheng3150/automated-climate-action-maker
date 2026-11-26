@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (entries.length === 0) {
       const empty = document.createElement('span');
       empty.className = 'nudge-empty';
-      empty.textContent = 'Default (every 22h) — adjust from nudge cards';
+      empty.textContent = 'No per-category overrides — adjust from nudge cards';
       nudgeOverridesListEl.replaceChildren(empty);
       return;
     }
@@ -215,20 +215,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  const alwaysOnToggle = document.getElementById('always-on-toggle') as HTMLInputElement | null;
+  const GLOBAL_FREQ_PRESETS = [
+    { label: 'Always', hours: 0 },
+    { label: '22h', hours: 22 },
+    { label: '3d', hours: 72 },
+    { label: '7d', hours: 168 },
+    { label: '30d', hours: 720 },
+    { label: 'Off', hours: -1 },
+  ] as const;
 
-  async function loadAlwaysOnState(): Promise<void> {
-    if (!alwaysOnToggle) return;
-    const data = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_ALWAYS_ON);
-    alwaysOnToggle.checked = data[STORAGE_KEYS.NUDGE_ALWAYS_ON] === true;
+  const globalFreqDialEl = document.getElementById('global-frequency-dial') as HTMLElement | null;
+
+  async function loadGlobalFrequency(): Promise<void> {
+    if (!globalFreqDialEl) return;
+    const data = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY);
+    const current: number | undefined = data[STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY];
+
+    globalFreqDialEl.replaceChildren();
+
+    for (const preset of GLOBAL_FREQ_PRESETS) {
+      const btn = document.createElement('button');
+      btn.className = 'freq-btn popup-freq-btn';
+      if (preset.hours === -1) btn.classList.add('off');
+      btn.textContent = preset.label;
+
+      const isActive = current == null ? preset.hours === 22 : preset.hours === current;
+      if (isActive) btn.classList.add('active');
+
+      btn.addEventListener('click', async () => {
+        for (const sibling of globalFreqDialEl.querySelectorAll('.freq-btn')) {
+          sibling.classList.remove('active');
+        }
+        btn.classList.add('active');
+        await chrome.storage.local.set({
+          [STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY]: preset.hours,
+        });
+      });
+
+      globalFreqDialEl.appendChild(btn);
+    }
   }
-
-  alwaysOnToggle?.addEventListener('change', async () => {
-    if (!alwaysOnToggle) return;
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.NUDGE_ALWAYS_ON]: alwaysOnToggle.checked,
-    });
-  });
 
   async function checkPermissions(): Promise<boolean> {
     const hasPermission = await chrome.permissions.contains({ permissions: ['history'] });
@@ -371,7 +397,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.USER_REGION_OVERRIDE,
       STORAGE_KEYS.NUDGE_COOLDOWNS,
       STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES,
-      STORAGE_KEYS.NUDGE_ALWAYS_ON,
+      STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY,
       STORAGE_KEYS.USER_LOCATION_ESTIMATE,
       STORAGE_KEYS.BROWSING_PROFILE,
     ]);
@@ -462,7 +488,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkPermissions();
   await loadCachedScan();
   await loadAutoScanState();
-  await loadAlwaysOnState();
+  await loadGlobalFrequency();
   await loadNudgeOverrides();
   await loadDiagnostics();
   await loadFeedbackCount();

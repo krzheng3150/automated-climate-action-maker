@@ -26,7 +26,7 @@ assert(DEFAULT_NUDGE_COOLDOWN_HOURS === 22, `Default cooldown is 22 hours (got $
 // --------------------------------------------------------------------------
 assert(STORAGE_KEYS.NUDGE_COOLDOWNS === 'nudgeCooldowns', 'NUDGE_COOLDOWNS storage key registered');
 assert(STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES === 'nudgeCategoryOverrides', 'NUDGE_CATEGORY_OVERRIDES storage key registered');
-assert(STORAGE_KEYS.NUDGE_ALWAYS_ON === 'nudgeAlwaysOn', 'NUDGE_ALWAYS_ON storage key registered');
+assert(STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY === 'nudgeGlobalFrequency', 'NUDGE_GLOBAL_FREQUENCY storage key registered');
 
 // --------------------------------------------------------------------------
 // 3. First visit (no prior timestamp) — always allowed
@@ -135,7 +135,7 @@ assert(
 );
 
 // --------------------------------------------------------------------------
-// 10. Always-on flag overrides everything
+// 10. Global frequency as default
 // --------------------------------------------------------------------------
 assert(
   resolveNudgeCooldown({
@@ -143,9 +143,45 @@ assert(
     now: NOW,
     cooldowns: { electronics: NOW - 1 * HOUR },
     overrides: {},
-    alwaysOn: true,
+    globalFrequencyHours: 0,
   }) === true,
-  'Always-on: allowed even within cooldown window'
+  'Global Always (0h): allowed even within cooldown window'
+);
+
+assert(
+  resolveNudgeCooldown({
+    category: 'electronics',
+    now: NOW,
+    cooldowns: { electronics: NOW - 50 * HOUR },
+    overrides: {},
+    globalFrequencyHours: 72,
+  }) === false,
+  'Global 3-day frequency, 50h elapsed: suppressed'
+);
+
+assert(
+  resolveNudgeCooldown({
+    category: 'electronics',
+    now: NOW,
+    cooldowns: { electronics: NOW - 80 * HOUR },
+    overrides: {},
+    globalFrequencyHours: 72,
+  }) === true,
+  'Global 3-day frequency, 80h elapsed: allowed'
+);
+
+// --------------------------------------------------------------------------
+// 11. Per-category override takes precedence over global
+// --------------------------------------------------------------------------
+assert(
+  resolveNudgeCooldown({
+    category: 'books',
+    now: NOW,
+    cooldowns: { books: NOW - 1 * HOUR },
+    overrides: { books: 0 },
+    globalFrequencyHours: 168,
+  }) === true,
+  'Per-category Always (0h) overrides global 7-day: allowed'
 );
 
 assert(
@@ -154,26 +190,27 @@ assert(
     now: NOW,
     cooldowns: {},
     overrides: { books: -1 },
-    alwaysOn: true,
-  }) === true,
-  'Always-on: overrides per-category disable'
+    globalFrequencyHours: 0,
+  }) === false,
+  'Per-category disabled overrides global Always: suppressed'
 );
 
 // --------------------------------------------------------------------------
-// 11. Per-category "Always" preset (hours = 0)
+// 12. Global off (-1) suppresses all categories
 // --------------------------------------------------------------------------
 assert(
   resolveNudgeCooldown({
     category: 'electronics',
     now: NOW,
-    cooldowns: { electronics: NOW - 1000 },
-    overrides: { electronics: 0 },
-  }) === true,
-  'Per-category Always (0h): allowed even with recent cooldown'
+    cooldowns: {},
+    overrides: {},
+    globalFrequencyHours: -1,
+  }) === false,
+  'Global Off (-1): suppressed even with no prior cooldown'
 );
 
 // --------------------------------------------------------------------------
-// 12. 30-day override
+// 13. 30-day override
 // --------------------------------------------------------------------------
 assert(
   resolveNudgeCooldown({

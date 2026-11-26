@@ -355,7 +355,7 @@ export const STORAGE_KEYS = {
   NUDGE_CATEGORY_OVERRIDES: 'nudgeCategoryOverrides',
   USER_LOCATION_ESTIMATE: 'userLocationEstimate',
   BROWSING_PROFILE: 'browsingProfile',
-  NUDGE_ALWAYS_ON: 'nudgeAlwaysOn',
+  NUDGE_GLOBAL_FREQUENCY: 'nudgeGlobalFrequency',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
@@ -371,12 +371,13 @@ export interface NudgeCooldownInput {
   now: number;
   cooldowns: Record<string, number>;
   overrides: Record<string, number>;
-  alwaysOn?: boolean;
+  globalFrequencyHours?: number;
 }
 
 export function resolveNudgeCooldown(input: NudgeCooldownInput): boolean {
-  if (input.alwaysOn) return true;
-  const cooldownHours = input.overrides[input.category] ?? DEFAULT_NUDGE_COOLDOWN_HOURS;
+  const cooldownHours = input.overrides[input.category]
+    ?? input.globalFrequencyHours
+    ?? DEFAULT_NUDGE_COOLDOWN_HOURS;
   if (cooldownHours === -1) return false;
   if (cooldownHours === 0) return true;
   const lastShown = input.cooldowns[input.category];
