@@ -31,6 +31,7 @@ export interface CivicActionSource {
 export interface RankedCivicAction extends CivicAction {
   score: number;
   distanceMi?: number;
+  frame?: string;
 }
 
 export interface UserCoords {

@@ -21,11 +21,12 @@ import {
 } from './index';
 import { checkFoodData } from './food/emissions';
 import { suggestForRecipe } from './food/suggest';
-import { resolveRegion, computeTopicAffinities, topTopics, matchCivicActions, getFallbackPlatforms, COUNTRY_NAMES } from './civic';
+import { resolveRegion, computeTopicAffinities, topTopics, matchCivicActions, getFallbackPlatforms, COUNTRY_NAMES, pickFrame, dominantMotivator } from './civic';
 import type { RankedCivicAction } from './civic';
 import { CIVIC_ACTIONS } from './civic/data';
 import { estimateUserLocation } from './civic/location';
 import { extractBrowsingProfile } from './browsing';
+import type { ToneTag } from './browsing/profile';
 import { REWARDS } from './rewards';
 
 /**
@@ -239,7 +240,7 @@ async function refreshBrowsingProfile(): Promise<void> {
       source: 'background',
       level: 'info',
       event: 'BROWSING_PROFILE_UPDATED',
-      details: `urls=${profile.totalUniqueUrls} days=${profile.lookbackDays} topics=[${topTopicEntries}] motivators=[${topMotivEntries}] interests=[${Object.entries(profile.interests).filter(([, v]) => v > 0).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([k, v]) => `${k}=${v}`).join(' ')}] flexibility=${sp.traitFlexibility} comparison=${sp.comparisonSitesCount} secondhand=${sp.secondhandSitesCount} retailers=${sp.retailerDiversity} categories=[${sp.recentCategories.join(',')}]`,
+      details: `urls=${profile.totalUniqueUrls} days=${profile.lookbackDays} topics=[${topTopicEntries}] motivators=[${topMotivEntries}] tones=[${Object.entries(profile.tones).filter(([, v]) => v > 0).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([k, v]) => `${k}=${v}`).join(' ')}] interests=[${Object.entries(profile.interests).filter(([, v]) => v > 0).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([k, v]) => `${k}=${v}`).join(' ')}] flexibility=${sp.traitFlexibility} comparison=${sp.comparisonSitesCount} secondhand=${sp.secondhandSitesCount} retailers=${sp.retailerDiversity} categories=[${sp.recentCategories.join(',')}]`,
     });
   } catch (err) {
     console.error('[ACAM] Browsing profile extraction failed:', err);
@@ -661,6 +662,27 @@ async function getCivicActionsForUser(): Promise<CivicActionsResult> {
   const ranked = matchCivicActions(detected.country, affinities, CIVIC_ACTIONS, 3, userCoords);
   const fallbacks = getFallbackPlatforms(detected.country);
 
+  // Attach motivator-based frames
+  const defaultTones: Record<ToneTag, number> = { urgent: 0, social: 0, practical: 1, emotional: 0, action: 0 };
+  const userMotivator = browsingProfile
+    ? dominantMotivator(browsingProfile.motivators)
+    : 'identity' as const;
+  const userTones = browsingProfile?.tones ?? defaultTones;
+  const now = Date.now();
+
+  for (const action of ranked) {
+    const daysLeft = action.deadline
+      ? Math.ceil((new Date(action.deadline).getTime() - now) / (1000 * 60 * 60 * 24))
+      : undefined;
+    const result = pickFrame(action, {
+      motivator: userMotivator,
+      tones: userTones,
+      daysLeft,
+      distanceMi: action.distanceMi,
+    });
+    action.frame = result.full;
+  }
+
   const topAff = topTopics(affinities, 5)
     .map((t) => `${t}=${affinities[t].toFixed(2)}`)
     .join(' ');
@@ -672,7 +694,7 @@ async function getCivicActionsForUser(): Promise<CivicActionsResult> {
     source: 'background',
     level: 'info',
     event: 'CIVIC_ACTIONS_COMPUTED',
-    details: `region=${detected.country}(${detected.confidence.toFixed(2)}) coords=${userCoords ? `${userCoords.lat.toFixed(1)},${userCoords.lng.toFixed(1)}` : 'none'} affinities=[${topAff}] results=${ranked.length}: ${rankedSummary}`,
+    details: `region=${detected.country}(${detected.confidence.toFixed(2)}) coords=${userCoords ? `${userCoords.lat.toFixed(1)},${userCoords.lng.toFixed(1)}` : 'none'} motivator=${userMotivator} tones=[${Object.entries(userTones).filter(([, v]) => v > 0).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([k, v]) => `${k}=${v}`).join(' ')}] affinities=[${topAff}] results=${ranked.length}: ${rankedSummary}`,
   });
 
   return {

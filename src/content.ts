@@ -751,7 +751,7 @@ class ACAMContentScript {
 
         const regionLabel = resp.region.countryName || resp.region.country;
         titleEl.textContent = `Climate Action in ${regionLabel}`;
-        descEl.textContent = `${topAction.platform}: Take action on a real ${topAction.type} relevant to your browsing interests.`;
+        descEl.textContent = topAction.frame || `${topAction.platform}: Take action on a real ${topAction.type} relevant to your browsing interests.`;
 
         actionBtn.textContent = `Take Action (+50 pts)`;
         actionBtn.disabled = false;

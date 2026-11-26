@@ -14,6 +14,7 @@ import { lookupDomainInterests, type InterestTag } from './interests';
 // ---------------------------------------------------------------------------
 
 export type Motivator = 'cost' | 'health' | 'community' | 'identity';
+export type ToneTag = 'urgent' | 'social' | 'practical' | 'emotional' | 'action';
 
 export interface ShoppingProfile {
   traitFlexibility: number;
@@ -26,6 +27,7 @@ export interface ShoppingProfile {
 export interface BrowsingProfile {
   topicSignals: Record<ClimateTopic, number>;
   motivators: Record<Motivator, number>;
+  tones: Record<ToneTag, number>;
   interests: Partial<Record<InterestTag, number>>;
   shoppingProfile: ShoppingProfile;
   totalUniqueUrls: number;
@@ -151,6 +153,51 @@ const PATH_UNIGRAM_MOTIVATORS: Record<string, Motivator[]> = {
   surfing: ['identity'], fishing: ['identity'], garden: ['identity'],
   gardening: ['identity'], diy: ['identity'], maker: ['identity'],
   craft: ['identity'], homestead: ['identity'],
+};
+
+// ---------------------------------------------------------------------------
+// Path keyword → tone mapping (linguistic register detection)
+// ---------------------------------------------------------------------------
+
+const PATH_UNIGRAM_TONES: Record<string, ToneTag[]> = {
+  // Urgent — time-pressure and scarcity language
+  urgent: ['urgent'], now: ['urgent'], today: ['urgent'],
+  deadline: ['urgent'], limited: ['urgent'], hurry: ['urgent'],
+  expiring: ['urgent'], immediate: ['urgent'], critical: ['urgent'],
+  breaking: ['urgent'], alert: ['urgent'], emergency: ['urgent'],
+  // Social — togetherness and belonging language
+  community: ['social'], local: ['social'], neighbors: ['social'],
+  together: ['social'], group: ['social'], meetup: ['social'],
+  chapter: ['social'], members: ['social'], collective: ['social'],
+  network: ['social'], gathering: ['social'], club: ['social'],
+  // Practical — concrete benefit and how-to language
+  save: ['practical'], free: ['practical'], budget: ['practical'],
+  cheap: ['practical'], tips: ['practical'], guide: ['practical'],
+  hack: ['practical'], easy: ['practical'], simple: ['practical'],
+  step: ['practical'], howto: ['practical'], tutorial: ['practical'],
+  compare: ['practical'], review: ['practical'],
+  // Emotional — values and conviction language
+  protect: ['emotional'], fight: ['emotional'], stand: ['emotional'],
+  believe: ['emotional'], values: ['emotional'], matter: ['emotional'],
+  care: ['emotional'], defend: ['emotional'], preserve: ['emotional'],
+  inspire: ['emotional'], justice: ['emotional'], future: ['emotional'],
+  // Action — participation and doing language
+  sign: ['action'], volunteer: ['action'], donate: ['action'],
+  join: ['action'], act: ['action'], petition: ['action'],
+  rally: ['action'], march: ['action'], pledge: ['action'],
+  organize: ['action'], mobilize: ['action'], campaign: ['action'],
+};
+
+const PATH_BIGRAM_TONES: Record<string, ToneTag[]> = {
+  'act now': ['urgent', 'action'], 'last chance': ['urgent'],
+  'limited time': ['urgent'], 'sign up': ['action'],
+  'join us': ['action', 'social'], 'take action': ['action'],
+  'get involved': ['action', 'social'], 'how to': ['practical'],
+  'step by': ['practical'], 'save money': ['practical'],
+  'make difference': ['emotional', 'action'],
+  'fight for': ['emotional', 'action'],
+  'stand up': ['emotional', 'action'],
+  'local community': ['social'], 'near you': ['social'],
 };
 
 // ---------------------------------------------------------------------------
@@ -314,6 +361,7 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
 
   const topicSignals = emptyTopicSignals();
   const motivators = emptyMotivators();
+  const tones: Record<ToneTag, number> = { urgent: 0, social: 0, practical: 0, emotional: 0, action: 0 };
   const comparisonSites = new Set<string>();
   const secondhandSites = new Set<string>();
   const retailers = new Set<string>();
@@ -381,6 +429,8 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
       if (topics) for (const t of topics) topicSignals[t]++;
       const motives = PATH_BIGRAM_MOTIVATORS[bg];
       if (motives) for (const m of motives) motivators[m]++;
+      const bgTones = PATH_BIGRAM_TONES[bg];
+      if (bgTones) for (const t of bgTones) tones[t]++;
     }
 
     // Unigrams
@@ -389,6 +439,8 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
       if (topics) for (const t of topics) topicSignals[t]++;
       const motives = PATH_UNIGRAM_MOTIVATORS[token];
       if (motives) for (const m of motives) motivators[m]++;
+      const uniTones = PATH_UNIGRAM_TONES[token];
+      if (uniTones) for (const t of uniTones) tones[t]++;
 
       // Product category detection
       const cat = PRODUCT_CATEGORY_KEYWORDS[token];
@@ -440,6 +492,7 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
   return {
     topicSignals,
     motivators,
+    tones,
     interests: interestCounts,
     shoppingProfile: {
       traitFlexibility: Number(traitFlexibility.toFixed(2)),

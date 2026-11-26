@@ -9,6 +9,9 @@ export type { CivicAction, CivicActionSource, RankedCivicAction, UserCoords } fr
 
 export { CIVIC_ACTIONS, CIVIC_DATA_META } from './data';
 
+export { pickFrame, dominantMotivator } from './frames';
+export type { FrameContext, ActionFrame } from './frames';
+
 export { estimateUserLocation } from './location';
 export type { UserLocationEstimate } from './location';
 
