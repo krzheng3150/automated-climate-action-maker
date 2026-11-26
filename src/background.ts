@@ -510,6 +510,13 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
+    if (msg.type === 'CHECK_SECONDHAND_NUDGE') {
+      checkSecondhandNudge(msg.payload?.category).then((result) => {
+        sendResponse(result);
+      });
+      return true;
+    }
+
     if (message.type === 'GET_STATUS') {
       flushPendingVisits().then(() => {
         chrome.storage.local
@@ -650,4 +657,25 @@ async function getCivicActionsForUser(): Promise<CivicActionsResult> {
     actions: ranked,
     fallbackPlatforms: fallbacks,
   };
+}
+
+const FLEXIBILITY_THRESHOLD = 0.3;
+const FLEXIBILITY_THRESHOLD_ACTIVE_CATEGORY = 0.15;
+
+async function checkSecondhandNudge(category?: string): Promise<{ show: boolean; flexibility: number }> {
+  const data = await chrome.storage.local.get(STORAGE_KEYS.BROWSING_PROFILE);
+  const profile = data[STORAGE_KEYS.BROWSING_PROFILE] as
+    import('./browsing/profile').BrowsingProfile | undefined;
+
+  if (!profile) {
+    return { show: true, flexibility: 0.35 };
+  }
+
+  const flexibility = profile.shoppingProfile.traitFlexibility;
+  const activeCategories = profile.shoppingProfile.recentCategories;
+  const threshold = category && activeCategories.includes(category)
+    ? FLEXIBILITY_THRESHOLD_ACTIVE_CATEGORY
+    : FLEXIBILITY_THRESHOLD;
+
+  return { show: flexibility >= threshold, flexibility };
 }

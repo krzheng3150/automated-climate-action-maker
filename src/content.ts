@@ -293,6 +293,16 @@ class ACAMContentScript {
           });
           return;
         }
+        const flexible = await this.checkFlexibility(category);
+        if (!flexible) {
+          recordDiagnostic({
+            source: 'content',
+            level: 'info',
+            event: 'NUDGE_SUPPRESSED',
+            details: `Low flexibility for ${category}`,
+          });
+          return;
+        }
         this.fire(scenario);
       }, 1200);
     }
@@ -379,6 +389,21 @@ class ACAMContentScript {
       now: Date.now(),
       cooldowns: data[STORAGE_KEYS.NUDGE_COOLDOWNS] ?? {},
       overrides: data[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {},
+    });
+  }
+
+  private checkFlexibility(category: ProductCategory): Promise<boolean> {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { type: 'CHECK_SECONDHAND_NUDGE', payload: { category } },
+        (resp) => {
+          if (chrome.runtime.lastError || !resp) {
+            resolve(true);
+            return;
+          }
+          resolve(resp.show);
+        }
+      );
     });
   }
 
