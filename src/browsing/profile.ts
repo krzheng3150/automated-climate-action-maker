@@ -7,6 +7,7 @@
  */
 
 import type { ClimateTopic } from '../civic/topics';
+import { lookupDomainInterests, type InterestTag } from './interests';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,6 +26,7 @@ export interface ShoppingProfile {
 export interface BrowsingProfile {
   topicSignals: Record<ClimateTopic, number>;
   motivators: Record<Motivator, number>;
+  interests: Partial<Record<InterestTag, number>>;
   shoppingProfile: ShoppingProfile;
   totalUniqueUrls: number;
   lookbackDays: number;
@@ -316,6 +318,7 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
   const secondhandSites = new Set<string>();
   const retailers = new Set<string>();
   const categoryHits = new Map<string, Set<string>>();
+  const interestCounts: Partial<Record<InterestTag, number>> = {};
 
   // Deduplicate by domain + first path segment
   const seen = new Set<string>();
@@ -353,6 +356,12 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
     if (SECONDHAND_SITES.has(domainBase)) secondhandSites.add(domainBase);
     if (RETAILER_DOMAINS.has(domainBase)) { retailers.add(domainBase); retailerHits++; }
     if (BRAND_DIRECT_SITES.has(domainBase)) brandDirectHits++;
+
+    // --- Interest classification (Chrome Topics dataset) ---
+    const tags = lookupDomainInterests(domainBase);
+    for (const tag of tags) {
+      interestCounts[tag] = (interestCounts[tag] ?? 0) + 1;
+    }
 
     // Check for subreddit signals (r/frugal, r/buyitforlife, etc.)
     if (hostname.includes('reddit.com') && pathParts[0] === 'r') {
@@ -431,6 +440,7 @@ export async function extractBrowsingProfile(): Promise<BrowsingProfile> {
   return {
     topicSignals,
     motivators,
+    interests: interestCounts,
     shoppingProfile: {
       traitFlexibility: Number(traitFlexibility.toFixed(2)),
       recentCategories,

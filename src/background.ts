@@ -239,7 +239,7 @@ async function refreshBrowsingProfile(): Promise<void> {
       source: 'background',
       level: 'info',
       event: 'BROWSING_PROFILE_UPDATED',
-      details: `urls=${profile.totalUniqueUrls} days=${profile.lookbackDays} topics=[${topTopicEntries}] motivators=[${topMotivEntries}] flexibility=${sp.traitFlexibility} comparison=${sp.comparisonSitesCount} secondhand=${sp.secondhandSitesCount} retailers=${sp.retailerDiversity} categories=[${sp.recentCategories.join(',')}]`,
+      details: `urls=${profile.totalUniqueUrls} days=${profile.lookbackDays} topics=[${topTopicEntries}] motivators=[${topMotivEntries}] interests=[${Object.entries(profile.interests).filter(([, v]) => v > 0).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([k, v]) => `${k}=${v}`).join(' ')}] flexibility=${sp.traitFlexibility} comparison=${sp.comparisonSitesCount} secondhand=${sp.secondhandSitesCount} retailers=${sp.retailerDiversity} categories=[${sp.recentCategories.join(',')}]`,
     });
   } catch (err) {
     console.error('[ACAM] Browsing profile extraction failed:', err);
