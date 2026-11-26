@@ -3,7 +3,7 @@
 // the extension. The extension never makes network calls itself.
 //
 // Usage: node scripts/fetch-civic-actions.mjs
-// Sources: UK Parliament Petitions API, Mobilize US events API, 350.org campaigns page
+// Sources: UK Parliament Petitions API, Mobilize US events API, Luma climate events, 350.org campaigns page
 
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -150,6 +150,9 @@ function parseMobilizeEvent(ev) {
   const state = loc.region || '';
   const locationLabel = [locality, state].filter(Boolean).join(', ');
   const desc = (ev.description || '').replace(/<[^>]+>/g, ' ').trim();
+  const innerLoc = loc.location || {};
+  const lat = innerLoc.latitude ?? null;
+  const lng = innerLoc.longitude ?? null;
 
   return {
     id: `mobilize-${ev.id}`,
@@ -161,6 +164,7 @@ function parseMobilizeEvent(ev) {
     type: mobilizeTypeToAcam(ev.event_type || 'OTHER'),
     deadline,
     fetchedAt: Date.now(),
+    ...(lat != null && lng != null ? { lat, lng } : {}),
   };
 }
 
@@ -213,6 +217,167 @@ async function fetchMobilizeEvents() {
   }
 
   return dedup(actions).slice(0, maxActions);
+}
+
+// ---------------------------------------------------------------------------
+// Luma (lu.ma) climate events — undocumented internal API, no auth required.
+// Category endpoint returns events tagged "Climate" by Luma's curation.
+// ---------------------------------------------------------------------------
+
+const LUMA_API = 'https://api.lu.ma';
+const LUMA_CLIMATE_CATEGORY = 'cat-climate';
+
+const LUMA_CLIMATE_CALENDARS = [
+  'cal-npP5u5y4VjA3n4M', // Out in Climate
+  'cal-B9nVwNtKmO3qpiE', // Climate Draft Community Calendar
+  'cal-a4nsa8E4FL0FAOd', // The Climate Party
+  'cal-Lly65h9vnpM8dp4', // Soapbox Seattle Community
+  'cal-dWMNt952eh2WWAh', // Climate Cafe NYC
+  'cal-Cv4SfxulyNrsjTM', // Dear Crisis
+];
+
+const LUMA_CLIMATE_TITLE_KEYWORDS = [
+  'climate', 'clean energy', 'renewable', 'solar', 'wind energy',
+  'fossil fuel', 'carbon', 'net zero', 'sustainability', 'sustainable',
+  'environmental', 'conservation', 'biodiversity',
+  'pollution', 'emissions', 'electric vehicle', 'cleantech', 'climate tech',
+  'clean tech', 'circular economy', 'reforestation', 'deforestation',
+  'climate justice', 'climate action', 'climate policy', 'climate week',
+  'climate change', 'wildlife', 'ocean',
+  'climate resilience', 'climate adaptation', 'decarboni',
+  'energy transition', 'climate risk', 'esg', 'impact invest',
+  'green energy', 'earth day', 'composting', 'zero waste',
+];
+
+const COUNTRY_NAME_TO_ISO = {
+  'united states': 'US', 'canada': 'CA', 'united kingdom': 'GB',
+  'australia': 'AU', 'new zealand': 'NZ', 'germany': 'DE',
+  'france': 'FR', 'india': 'IN', 'japan': 'JP', 'brazil': 'BR',
+  'mexico': 'MX', 'netherlands': 'NL', 'spain': 'ES', 'italy': 'IT',
+  'sweden': 'SE', 'norway': 'NO', 'denmark': 'DK', 'finland': 'FI',
+  'switzerland': 'CH', 'austria': 'AT', 'belgium': 'BE',
+  'ireland': 'IE', 'portugal': 'PT', 'south africa': 'ZA',
+  'kenya': 'KE', 'nigeria': 'NG', 'singapore': 'SG',
+  'south korea': 'KR', 'indonesia': 'ID', 'philippines': 'PH',
+  'thailand': 'TH', 'vietnam': 'VN', 'colombia': 'CO',
+  'argentina': 'AR', 'chile': 'CL', 'peru': 'PE', 'poland': 'PL',
+  'czech republic': 'CZ', 'czechia': 'CZ', 'romania': 'RO',
+  'hungary': 'HU', 'greece': 'GR', 'turkey': 'TR', 'israel': 'IL',
+  'united arab emirates': 'AE', 'saudi arabia': 'SA',
+  'egypt': 'EG', 'morocco': 'MA', 'taiwan': 'TW', 'malaysia': 'MY',
+  'pakistan': 'PK', 'bangladesh': 'BD', 'sri lanka': 'LK',
+  'costa rica': 'CR', 'panama': 'PA', 'jamaica': 'JM',
+};
+
+function lumaCountryToISO(country) {
+  if (!country) return 'global';
+  const lower = country.toLowerCase().trim();
+  return COUNTRY_NAME_TO_ISO[lower] || 'global';
+}
+
+function isLumaClimateRelevant(title) {
+  const lower = title.toLowerCase();
+  return LUMA_CLIMATE_TITLE_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+function parseLumaEvent(entry) {
+  const ev = entry.event || {};
+  const geo = ev.geo_address_info || {};
+  const title = (ev.name || '').trim();
+  const isVirtual = ev.location_type === 'online' || ev.location_type === 'zoom' || !geo.country;
+  const isoFromCode = (geo.country_code || '').toUpperCase();
+  const region = isVirtual ? 'global' : (isoFromCode || lumaCountryToISO(geo.country));
+  const cityState = geo.city_state || '';
+  const coord = geo.place_coordinate || {};
+  const lat = coord.latitude ?? null;
+  const lng = coord.longitude ?? null;
+
+  return {
+    id: `luma-${ev.api_id || ev.url || ''}`,
+    title: cityState && !isVirtual ? `${title} — ${cityState}` : title,
+    url: `https://lu.ma/${ev.url}`,
+    platform: 'Luma',
+    region,
+    topics: inferTopics(title),
+    type: 'event',
+    deadline: ev.end_at || undefined,
+    fetchedAt: Date.now(),
+    ...(lat != null && lng != null ? { lat, lng } : {}),
+  };
+}
+
+async function fetchLumaEvents() {
+  const actions = [];
+  const maxActions = 30;
+  const seen = new Set();
+
+  // Pass 1: Calendar-targeted (global coverage, high precision)
+  for (const calId of LUMA_CLIMATE_CALENDARS) {
+    try {
+      const url = `${LUMA_API}/calendar/get-items?calendar_api_id=${calId}&period=future&pagination_limit=25`;
+      const resp = await fetch(url);
+      if (!resp.ok) continue;
+      const json = await resp.json();
+      for (const entry of json.entries || []) {
+        const ev = entry.event || {};
+        const id = ev.api_id || ev.url;
+        if (!id || seen.has(id)) continue;
+        const title = (ev.name || '').trim();
+        if (!title || !isLumaClimateRelevant(title)) continue;
+        seen.add(id);
+        actions.push(parseLumaEvent(entry));
+      }
+    } catch (err) {
+      console.warn(`  Luma calendar ${calId} failed:`, err.message);
+    }
+  }
+
+  // Pass 2: Category sweep (volume, may be geo-biased)
+  // The climate category is loose, so filter by title keywords.
+  let cursor = null;
+  const maxPages = 10;
+  for (let page = 0; page < maxPages && actions.length < maxActions; page++) {
+    try {
+      let url = `${LUMA_API}/discover/get-paginated-events?category_api_id=${LUMA_CLIMATE_CATEGORY}&period=future&pagination_limit=50`;
+      if (cursor) url += `&pagination_cursor=${encodeURIComponent(cursor)}`;
+      const resp = await fetch(url);
+      if (!resp.ok) break;
+      const json = await resp.json();
+      for (const entry of json.entries || []) {
+        const ev = entry.event || {};
+        const id = ev.api_id || ev.url;
+        if (!id || seen.has(id)) continue;
+        const title = (ev.name || '').trim();
+        if (!title || !isLumaClimateRelevant(title)) continue;
+        seen.add(id);
+        actions.push(parseLumaEvent(entry));
+      }
+      if (!json.has_more) break;
+      cursor = json.next_cursor;
+    } catch (err) {
+      console.warn(`  Luma category page ${page + 1} failed:`, err.message);
+      break;
+    }
+  }
+
+  // Prioritize region diversity: sort to spread regions, then cap
+  const regionBuckets = {};
+  for (const a of actions) {
+    (regionBuckets[a.region] ??= []).push(a);
+  }
+  const diverse = [];
+  let added = true;
+  while (diverse.length < maxActions && added) {
+    added = false;
+    for (const region of Object.keys(regionBuckets)) {
+      if (regionBuckets[region].length > 0 && diverse.length < maxActions) {
+        diverse.push(regionBuckets[region].shift());
+        added = true;
+      }
+    }
+  }
+
+  return dedup(diverse);
 }
 
 // ---------------------------------------------------------------------------
@@ -408,6 +573,10 @@ function generateModule(actions) {
     ts += `    type: '${a.type}',\n`;
     if (a.signatures) ts += `    signatures: ${a.signatures},\n`;
     if (a.deadline) ts += `    deadline: '${a.deadline}',\n`;
+    if (a.lat != null && a.lng != null) {
+      ts += `    lat: ${a.lat},\n`;
+      ts += `    lng: ${a.lng},\n`;
+    }
     ts += `    fetchedAt: ${a.fetchedAt},\n`;
     ts += `  },\n`;
   }
@@ -426,6 +595,7 @@ async function main() {
   const results = await Promise.allSettled([
     fetchUKPetitions().then((r) => { console.log(`  UK Parliament: ${r.length} petitions`); return r; }),
     fetchMobilizeEvents().then((r) => { console.log(`  Mobilize: ${r.length} US events`); return r; }),
+    fetchLumaEvents().then((r) => { console.log(`  Luma: ${r.length} climate events`); return r; }),
     fetch350Campaigns().then((r) => { console.log(`  350.org: ${r.length} campaigns`); return r; }),
   ]);
 

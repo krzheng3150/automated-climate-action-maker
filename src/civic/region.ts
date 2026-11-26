@@ -239,6 +239,67 @@ export function resolveRegion(
   return tzRegion ?? domainRegion ?? { country: 'US', subdivision: null, confidence: 0.1, source: 'timezone' };
 }
 
+export const TIMEZONE_COORDS: Record<string, { lat: number; lng: number }> = {
+  'America/New_York': { lat: 40.7128, lng: -74.006 },
+  'America/Chicago': { lat: 41.8781, lng: -87.6298 },
+  'America/Denver': { lat: 39.7392, lng: -104.9903 },
+  'America/Los_Angeles': { lat: 34.0522, lng: -118.2437 },
+  'America/Phoenix': { lat: 33.4484, lng: -112.074 },
+  'America/Anchorage': { lat: 61.2181, lng: -149.9003 },
+  'Pacific/Honolulu': { lat: 21.3069, lng: -157.8583 },
+  'America/Detroit': { lat: 42.3314, lng: -83.0458 },
+  'America/Indiana/Indianapolis': { lat: 39.7684, lng: -86.1581 },
+  'America/Boise': { lat: 43.615, lng: -116.2023 },
+  'America/Kentucky/Louisville': { lat: 38.2527, lng: -85.7585 },
+  'America/Toronto': { lat: 43.6532, lng: -79.3832 },
+  'America/Vancouver': { lat: 49.2827, lng: -123.1207 },
+  'America/Edmonton': { lat: 53.5461, lng: -113.4938 },
+  'America/Winnipeg': { lat: 49.8951, lng: -97.1384 },
+  'America/Halifax': { lat: 44.6488, lng: -63.5752 },
+  'Europe/London': { lat: 51.5074, lng: -0.1278 },
+  'Europe/Dublin': { lat: 53.3498, lng: -6.2603 },
+  'Europe/Paris': { lat: 48.8566, lng: 2.3522 },
+  'Europe/Berlin': { lat: 52.52, lng: 13.405 },
+  'Europe/Amsterdam': { lat: 52.3676, lng: 4.9041 },
+  'Europe/Madrid': { lat: 40.4168, lng: -3.7038 },
+  'Europe/Rome': { lat: 41.9028, lng: 12.4964 },
+  'Europe/Stockholm': { lat: 59.3293, lng: 18.0686 },
+  'Europe/Oslo': { lat: 59.9139, lng: 10.7522 },
+  'Europe/Copenhagen': { lat: 55.6761, lng: 12.5683 },
+  'Europe/Helsinki': { lat: 60.1699, lng: 24.9384 },
+  'Australia/Sydney': { lat: -33.8688, lng: 151.2093 },
+  'Australia/Melbourne': { lat: -37.8136, lng: 144.9631 },
+  'Australia/Brisbane': { lat: -27.4698, lng: 153.0251 },
+  'Australia/Perth': { lat: -31.9505, lng: 115.8605 },
+  'Pacific/Auckland': { lat: -36.8485, lng: 174.7633 },
+  'Asia/Tokyo': { lat: 35.6762, lng: 139.6503 },
+  'Asia/Seoul': { lat: 37.5665, lng: 126.978 },
+  'Asia/Shanghai': { lat: 31.2304, lng: 121.4737 },
+  'Asia/Singapore': { lat: 1.3521, lng: 103.8198 },
+  'Asia/Kolkata': { lat: 22.5726, lng: 88.3639 },
+  'Asia/Jakarta': { lat: -6.2088, lng: 106.8456 },
+  'Asia/Bangkok': { lat: 13.7563, lng: 100.5018 },
+  'Asia/Dubai': { lat: 25.2048, lng: 55.2708 },
+  'America/Sao_Paulo': { lat: -23.5505, lng: -46.6333 },
+  'America/Argentina/Buenos_Aires': { lat: -34.6037, lng: -58.3816 },
+  'America/Mexico_City': { lat: 19.4326, lng: -99.1332 },
+  'America/Bogota': { lat: 4.711, lng: -74.0721 },
+  'America/Lima': { lat: -12.0464, lng: -77.0428 },
+  'Africa/Johannesburg': { lat: -26.2041, lng: 28.0473 },
+  'Africa/Lagos': { lat: 6.5244, lng: 3.3792 },
+  'Africa/Nairobi': { lat: -1.2921, lng: 36.8219 },
+  'Africa/Cairo': { lat: 30.0444, lng: 31.2357 },
+};
+
+export function getTimezoneCoords(): { lat: number; lng: number } | null {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return TIMEZONE_COORDS[tz] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export const COUNTRY_NAMES: Record<string, string> = {
   US: 'United States', CA: 'Canada', GB: 'United Kingdom', AU: 'Australia',
   NZ: 'New Zealand', IE: 'Ireland', DE: 'Germany', FR: 'France',

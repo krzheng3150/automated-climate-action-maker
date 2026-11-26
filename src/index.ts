@@ -353,6 +353,7 @@ export const STORAGE_KEYS = {
   USER_REGION_OVERRIDE: 'userRegionOverride',
   NUDGE_COOLDOWNS: 'nudgeCooldowns',
   NUDGE_CATEGORY_OVERRIDES: 'nudgeCategoryOverrides',
+  USER_LOCATION_ESTIMATE: 'userLocationEstimate',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

@@ -355,6 +355,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.USER_REGION_OVERRIDE,
       STORAGE_KEYS.NUDGE_COOLDOWNS,
       STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES,
+      STORAGE_KEYS.USER_LOCATION_ESTIMATE,
     ]);
     renderDiagnostics([]);
     if (googleCountEl) googleCountEl.textContent = '0';

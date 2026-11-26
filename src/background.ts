@@ -24,6 +24,7 @@ import { suggestForRecipe } from './food/suggest';
 import { resolveRegion, computeTopicAffinities, topTopics, matchCivicActions, getFallbackPlatforms, COUNTRY_NAMES } from './civic';
 import type { RankedCivicAction } from './civic';
 import { CIVIC_ACTIONS } from './civic/data';
+import { estimateUserLocation } from './civic/location';
 import { REWARDS } from './rewards';
 
 /**
@@ -196,10 +197,32 @@ chrome.history.onVisited.addListener(async (item) => {
   }
 });
 
+const LOCATION_ALARM_NAME = 'acam-location-estimate';
+
+async function refreshLocationEstimate(): Promise<void> {
+  try {
+    const estimate = await estimateUserLocation();
+    if (estimate) {
+      await chrome.storage.local.set({ [STORAGE_KEYS.USER_LOCATION_ESTIMATE]: estimate });
+      recordDiagnostic({
+        source: 'background',
+        level: 'info',
+        event: 'LOCATION_ESTIMATED',
+        details: `City: ${estimate.city} (${estimate.country}), confidence: ${estimate.confidence.toFixed(2)}`,
+      });
+    }
+  } catch (err) {
+    console.error('[ACAM] Location estimate failed:', err);
+  }
+}
+
 // Conservative Fallback Alarm Listener
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === CONSERVATIVE_ALARM_NAME) {
     await flushPendingVisits('scheduled_incremental');
+  }
+  if (alarm.name === LOCATION_ALARM_NAME) {
+    await refreshLocationEstimate();
   }
 });
 
@@ -220,6 +243,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
   const autoScanEnabled = stored[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
   await configureConservativeAlarm(autoScanEnabled);
+  chrome.alarms.create(LOCATION_ALARM_NAME, { delayInMinutes: 2, periodInMinutes: 360 });
   recordDiagnostic({
     source: 'background',
     level: 'info',
@@ -234,6 +258,7 @@ chrome.runtime.onStartup.addListener(async () => {
   const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
   const autoScanEnabled = stored[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
   await configureConservativeAlarm(autoScanEnabled);
+  chrome.alarms.create(LOCATION_ALARM_NAME, { delayInMinutes: 2, periodInMinutes: 360 });
 });
 
 // Helper for smooth, observable streaming steps
@@ -580,15 +605,19 @@ async function getCivicActionsForUser(): Promise<CivicActionsResult> {
   const data = await chrome.storage.local.get([
     STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
     STORAGE_KEYS.USER_REGION_OVERRIDE,
+    STORAGE_KEYS.USER_LOCATION_ESTIMATE,
   ]);
 
   const snapshot = data[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] as DigitalFootprintSnapshot | null;
   const override = (data[STORAGE_KEYS.USER_REGION_OVERRIDE] as string) || null;
   const topDomains = snapshot?.sources?.history?.topDomains ?? [];
+  const locationEstimate = data[STORAGE_KEYS.USER_LOCATION_ESTIMATE] as
+    { lat: number; lng: number } | undefined;
+  const userCoords = locationEstimate ? { lat: locationEstimate.lat, lng: locationEstimate.lng } : null;
 
   const detected = resolveRegion(topDomains, override);
   const affinities = computeTopicAffinities(snapshot);
-  const ranked = matchCivicActions(detected.country, affinities, CIVIC_ACTIONS);
+  const ranked = matchCivicActions(detected.country, affinities, CIVIC_ACTIONS, 3, userCoords);
   const fallbacks = getFallbackPlatforms(detected.country);
 
   return {

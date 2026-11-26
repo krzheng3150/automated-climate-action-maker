@@ -1,13 +1,13 @@
 // GENERATED FILE - do not edit by hand. Regenerate with: node scripts/fetch-civic-actions.mjs
-// Data fetched 2026-11-26. Regions: AU, CA, DE, GB, IN, NZ, US. Platforms: 350 Aotearoa, ACF, Campact, Fossil Fuel Treaty, GetUp, Greenpeace India, Leadnow, Mobilize, Regulations.gov, Sierra Club, UK Parliament Petitions.
+// Data fetched 2026-11-26. Regions: AU, CA, DE, GB, IN, NZ, US. Platforms: 350 Aotearoa, ACF, Campact, Fossil Fuel Treaty, GetUp, Greenpeace India, Leadnow, Luma, Mobilize, Regulations.gov, Sierra Club, UK Parliament Petitions.
 
 import type { CivicAction } from './recommend';
 
 export const CIVIC_DATA_META = {
   fetchedAt: '2026-11-26',
-  actionCount: 99,
+  actionCount: 105,
   regions: ['AU', 'CA', 'DE', 'GB', 'IN', 'NZ', 'US'],
-  platforms: ['350 Aotearoa', 'ACF', 'Campact', 'Fossil Fuel Treaty', 'GetUp', 'Greenpeace India', 'Leadnow', 'Mobilize', 'Regulations.gov', 'Sierra Club', 'UK Parliament Petitions'],
+  platforms: ['350 Aotearoa', 'ACF', 'Campact', 'Fossil Fuel Treaty', 'GetUp', 'Greenpeace India', 'Leadnow', 'Luma', 'Mobilize', 'Regulations.gov', 'Sierra Club', 'UK Parliament Petitions'],
 } as const;
 
 export const CIVIC_ACTIONS: CivicAction[] = [
@@ -19,7 +19,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'AU',
     topics: ['policy', 'fossil-fuels'],
     type: 'campaign',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
   },
   {
     id: 'curated-au-acf',
@@ -29,7 +29,79 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'AU',
     topics: ['conservation', 'policy'],
     type: 'campaign',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
+  },
+  {
+    id: 'luma-evt-mRvsxnU5eu0GW43',
+    title: 'Climate Coffee Toronto — Toronto, Ontario',
+    url: 'https://lu.ma/n378u30r',
+    platform: 'Luma',
+    region: 'CA',
+    topics: ['policy'],
+    type: 'event',
+    deadline: '2026-11-26T15:00:00.000Z',
+    fetchedAt: 1795703680889,
+  },
+  {
+    id: 'luma-evt-nQOJog91c9wRjMU',
+    title: 'What’s Next for Canada’s Insurance Sector? Unpacking Results from OSFI’s Latest Climate Risk Return — Toronto, ON',
+    url: 'https://lu.ma/cwgp4f9u',
+    platform: 'Luma',
+    region: 'CA',
+    topics: ['policy'],
+    type: 'event',
+    deadline: '2026-11-26T17:00:00.000Z',
+    lat: 43.649796699999996,
+    lng: -79.38294309999999,
+    fetchedAt: 1795703680889,
+  },
+  {
+    id: 'luma-evt-B3mIFKmAdoKxfJh',
+    title: 'Climate Book & Article Club: Speculative Design — Toronto, ON',
+    url: 'https://lu.ma/y28lnt82',
+    platform: 'Luma',
+    region: 'CA',
+    topics: ['policy'],
+    type: 'event',
+    deadline: '2026-11-27T01:30:00.000Z',
+    lat: 43.6821565,
+    lng: -79.39188340000001,
+    fetchedAt: 1795703680889,
+  },
+  {
+    id: 'luma-evt-hheH0OmWMbJS3TU',
+    title: 'Climate x AI Symposium — Toronto, ON',
+    url: 'https://lu.ma/6f6fhr7o',
+    platform: 'Luma',
+    region: 'CA',
+    topics: ['policy'],
+    type: 'event',
+    deadline: '2026-12-08T02:30:00.000Z',
+    lat: 43.65980450000001,
+    lng: -79.39729799999999,
+    fetchedAt: 1795703681708,
+  },
+  {
+    id: 'luma-evt-arkghDpHC5zHMzB',
+    title: 'Sustainability Book Club — Toronto, ON',
+    url: 'https://lu.ma/3arkijmf',
+    platform: 'Luma',
+    region: 'CA',
+    topics: ['policy'],
+    type: 'event',
+    deadline: '2027-01-20T01:30:00.000Z',
+    fetchedAt: 1795703682244,
+  },
+  {
+    id: 'luma-evt-5wifLzflZStyJJe',
+    title: 'Clean Tech in the Classroom: A Masterclass for Educators and Business Leaders Building the Next Generation of Green Talent — Toronto, ON',
+    url: 'https://lu.ma/5z8aivw5',
+    platform: 'Luma',
+    region: 'CA',
+    topics: ['policy'],
+    type: 'event',
+    deadline: '2027-02-19T00:30:00.000Z',
+    fetchedAt: 1795703682446,
   },
   {
     id: 'curated-ca-leadnow',
@@ -39,7 +111,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'CA',
     topics: ['policy', 'energy'],
     type: 'campaign',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
   },
   {
     id: 'curated-de-campact',
@@ -49,7 +121,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'DE',
     topics: ['policy', 'energy'],
     type: 'campaign',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
   },
   {
     id: 'uk-770200',
@@ -60,7 +132,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 22588,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-780321',
@@ -71,7 +143,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 14410,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-775071',
@@ -82,7 +154,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 14313,
-    fetchedAt: 1795701308291,
+    fetchedAt: 1795703682987,
   },
   {
     id: 'uk-769206',
@@ -92,8 +164,8 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'GB',
     topics: ['policy'],
     type: 'petition',
-    signatures: 10923,
-    fetchedAt: 1795701306197,
+    signatures: 10924,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-771285',
@@ -104,7 +176,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 1642,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-777499',
@@ -115,7 +187,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 792,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-775429',
@@ -126,7 +198,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['energy'],
     type: 'petition',
     signatures: 737,
-    fetchedAt: 1795701308291,
+    fetchedAt: 1795703682987,
   },
   {
     id: 'uk-774023',
@@ -137,7 +209,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 630,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-776762',
@@ -148,7 +220,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 616,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-769457',
@@ -159,7 +231,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['conservation'],
     type: 'petition',
     signatures: 394,
-    fetchedAt: 1795701308291,
+    fetchedAt: 1795703682987,
   },
   {
     id: 'uk-780296',
@@ -170,7 +242,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['energy'],
     type: 'petition',
     signatures: 285,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-770642',
@@ -181,7 +253,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 244,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'uk-767984',
@@ -192,7 +264,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 228,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'uk-781519',
@@ -203,7 +275,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 220,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-778853',
@@ -214,7 +286,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 211,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'uk-775009',
@@ -225,7 +297,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 180,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-778262',
@@ -236,7 +308,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 170,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-778744',
@@ -247,7 +319,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 166,
-    fetchedAt: 1795701308291,
+    fetchedAt: 1795703682987,
   },
   {
     id: 'uk-775833',
@@ -258,7 +330,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 159,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'uk-780955',
@@ -269,7 +341,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 153,
-    fetchedAt: 1795701306919,
+    fetchedAt: 1795703681727,
   },
   {
     id: 'uk-765785',
@@ -280,7 +352,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 151,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-778226',
@@ -291,7 +363,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 142,
-    fetchedAt: 1795701308291,
+    fetchedAt: 1795703682987,
   },
   {
     id: 'uk-770831',
@@ -302,7 +374,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 132,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-777611',
@@ -313,7 +385,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 121,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-776625',
@@ -324,7 +396,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['energy'],
     type: 'petition',
     signatures: 114,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-775845',
@@ -335,7 +407,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 111,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'uk-775188',
@@ -346,7 +418,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 106,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-778810',
@@ -357,7 +429,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['energy'],
     type: 'petition',
     signatures: 77,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-778494',
@@ -368,7 +440,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['waste'],
     type: 'petition',
     signatures: 64,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'uk-775216',
@@ -379,7 +451,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 61,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-780018',
@@ -390,7 +462,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 59,
-    fetchedAt: 1795701306919,
+    fetchedAt: 1795703681727,
   },
   {
     id: 'uk-775203',
@@ -401,7 +473,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['conservation'],
     type: 'petition',
     signatures: 58,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-779556',
@@ -412,7 +484,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 56,
-    fetchedAt: 1795701306919,
+    fetchedAt: 1795703681727,
   },
   {
     id: 'uk-774963',
@@ -423,7 +495,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 52,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-777148',
@@ -434,7 +506,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['energy'],
     type: 'petition',
     signatures: 49,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-775175',
@@ -445,7 +517,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 47,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-773664',
@@ -456,7 +528,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 47,
-    fetchedAt: 1795701306919,
+    fetchedAt: 1795703681727,
   },
   {
     id: 'uk-780101',
@@ -467,7 +539,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 46,
-    fetchedAt: 1795701306919,
+    fetchedAt: 1795703681727,
   },
   {
     id: 'uk-779210',
@@ -478,7 +550,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 41,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-776610',
@@ -489,7 +561,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 38,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-770953',
@@ -500,7 +572,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 36,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'uk-775960',
@@ -511,7 +583,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 35,
-    fetchedAt: 1795701306919,
+    fetchedAt: 1795703681727,
   },
   {
     id: 'uk-778860',
@@ -522,7 +594,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 33,
-    fetchedAt: 1795701306197,
+    fetchedAt: 1795703680997,
   },
   {
     id: 'uk-779797',
@@ -533,7 +605,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['energy'],
     type: 'petition',
     signatures: 31,
-    fetchedAt: 1795701306919,
+    fetchedAt: 1795703681727,
   },
   {
     id: 'uk-785874',
@@ -543,8 +615,8 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'GB',
     topics: ['policy'],
     type: 'petition',
-    signatures: 25,
-    fetchedAt: 1795701308291,
+    signatures: 26,
+    fetchedAt: 1795703682987,
   },
   {
     id: 'uk-781321',
@@ -555,7 +627,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'petition',
     signatures: 25,
-    fetchedAt: 1795701308291,
+    fetchedAt: 1795703682987,
   },
   {
     id: 'uk-781775',
@@ -566,7 +638,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['waste'],
     type: 'petition',
     signatures: 22,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'uk-781959',
@@ -577,7 +649,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['fossil-fuels'],
     type: 'petition',
     signatures: 17,
-    fetchedAt: 1795701307677,
+    fetchedAt: 1795703682256,
   },
   {
     id: 'uk-780060',
@@ -588,7 +660,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['food'],
     type: 'petition',
     signatures: 17,
-    fetchedAt: 1795701308291,
+    fetchedAt: 1795703682987,
   },
   {
     id: 'uk-786452',
@@ -599,7 +671,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['transport', 'waste'],
     type: 'petition',
     signatures: 15,
-    fetchedAt: 1795701308906,
+    fetchedAt: 1795703683524,
   },
   {
     id: 'curated-in-gp',
@@ -609,7 +681,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'IN',
     topics: ['policy', 'conservation'],
     type: 'campaign',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
   },
   {
     id: 'curated-nz-350',
@@ -619,7 +691,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'NZ',
     topics: ['policy', 'fossil-fuels'],
     type: 'campaign',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
   },
   {
     id: 'mobilize-482376',
@@ -630,7 +702,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-05T17:00:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 40.4861552,
+    lng: -74.45185,
+    fetchedAt: 1795703680415,
   },
   {
     id: 'mobilize-549814',
@@ -641,7 +715,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-17T01:15:00.000Z',
-    fetchedAt: 1795701305649,
+    fetchedAt: 1795703680415,
   },
   {
     id: 'mobilize-600052',
@@ -652,7 +726,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-01T00:30:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 39.9135471,
+    lng: -75.064035,
+    fetchedAt: 1795703680415,
   },
   {
     id: 'mobilize-602085',
@@ -663,7 +739,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['fossil-fuels'],
     type: 'event',
     deadline: '2026-12-11T01:00:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 39.9412882,
+    lng: -75.2187346,
+    fetchedAt: 1795703680415,
   },
   {
     id: 'mobilize-604792',
@@ -674,7 +752,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2027-02-24T03:00:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 37.8645848,
+    lng: -122.2965778,
+    fetchedAt: 1795703680415,
   },
   {
     id: 'mobilize-752408',
@@ -685,7 +765,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-09T04:00:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 34.1583867,
+    lng: -118.3700036,
+    fetchedAt: 1795703680415,
   },
   {
     id: 'mobilize-755201',
@@ -696,7 +778,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['fossil-fuels', 'policy'],
     type: 'event',
     deadline: '2026-12-01T01:00:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 27.9552692,
+    lng: -82.4563199,
+    fetchedAt: 1795703680415,
   },
   {
     id: 'mobilize-777905',
@@ -707,7 +791,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-16T01:00:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 40.592313,
+    lng: -75.5419312,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-823744',
@@ -718,7 +804,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['fossil-fuels'],
     type: 'event',
     deadline: '2026-12-03T00:30:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 39.9412882,
+    lng: -75.2187346,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-859861',
@@ -729,7 +817,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-03T21:00:00.000Z',
-    fetchedAt: 1795701305649,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-886555',
@@ -740,7 +828,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['waste'],
     type: 'event',
     deadline: '2026-12-09T01:00:00.000Z',
-    fetchedAt: 1795701305649,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-939268',
@@ -751,7 +839,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-03T01:00:00.000Z',
-    fetchedAt: 1795701305649,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-970424',
@@ -762,7 +850,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-03T00:00:00.000Z',
-    fetchedAt: 1795701305649,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1044242',
@@ -773,7 +861,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-11T01:00:00.000Z',
-    fetchedAt: 1795701305649,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1047898',
@@ -784,7 +872,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2027-01-28T01:00:00.000Z',
-    fetchedAt: 1795701305649,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1056025',
@@ -795,7 +883,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['fossil-fuels'],
     type: 'event',
     deadline: '2026-12-01T22:30:00.000Z',
-    fetchedAt: 1795701305649,
+    lat: 40.689612,
+    lng: -73.946732,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1057970',
@@ -806,7 +896,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2027-01-12T19:00:00.000Z',
-    fetchedAt: 1795701305650,
+    lat: 42.652772,
+    lng: -73.7572388,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1059105',
@@ -817,7 +909,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-13T21:30:00.000Z',
-    fetchedAt: 1795701305650,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1066304',
@@ -828,7 +920,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['fossil-fuels'],
     type: 'event',
     deadline: '2026-12-01T01:00:00.000Z',
-    fetchedAt: 1795701305650,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1071856',
@@ -839,7 +931,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-11T01:30:00.000Z',
-    fetchedAt: 1795701305650,
+    lat: 40.7826661,
+    lng: -73.6858298,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1072860',
@@ -850,7 +944,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['fossil-fuels', 'policy'],
     type: 'event',
     deadline: '2026-12-03T00:00:00.000Z',
-    fetchedAt: 1795701305650,
+    lat: 39.9135471,
+    lng: -75.064035,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1079562',
@@ -861,7 +957,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['energy'],
     type: 'event',
     deadline: '2026-12-04T00:45:00.000Z',
-    fetchedAt: 1795701305650,
+    lat: 41.0804801,
+    lng: -73.8583057,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1080649',
@@ -872,7 +970,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-02T21:00:00.000Z',
-    fetchedAt: 1795701305650,
+    lat: 35.1338614,
+    lng: -106.6409198,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1080650',
@@ -883,7 +983,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['fossil-fuels', 'policy'],
     type: 'event',
     deadline: '2026-12-17T15:00:00.000Z',
-    fetchedAt: 1795701305650,
+    lat: 40.6849012,
+    lng: -73.9768046,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-1081229',
@@ -894,7 +996,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['waste', 'policy'],
     type: 'event',
     deadline: '2026-12-05T19:30:00.000Z',
-    fetchedAt: 1795701305650,
+    lat: 43.1027768,
+    lng: -76.2078667,
+    fetchedAt: 1795703680416,
   },
   {
     id: 'mobilize-747434',
@@ -905,7 +1009,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-07T01:30:00.000Z',
-    fetchedAt: 1795701305984,
+    lat: 40.449261,
+    lng: -79.9459597,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-751544',
@@ -916,7 +1022,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-16T04:30:00.000Z',
-    fetchedAt: 1795701305984,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-803079',
@@ -927,7 +1033,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-11T00:30:00.000Z',
-    fetchedAt: 1795701305984,
+    lat: 35.6221214,
+    lng: -82.5536681,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-879490',
@@ -938,7 +1046,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-03T01:30:00.000Z',
-    fetchedAt: 1795701305984,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-956761',
@@ -949,7 +1057,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-13T20:00:00.000Z',
-    fetchedAt: 1795701305984,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-960379',
@@ -960,7 +1068,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-06T20:00:00.000Z',
-    fetchedAt: 1795701305984,
+    lat: 41.9215421,
+    lng: -87.7024817,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-1002387',
@@ -971,7 +1081,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2027-01-06T16:45:00.000Z',
-    fetchedAt: 1795701305984,
+    lat: 45.4194095,
+    lng: -122.6676754,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-1045467',
@@ -982,7 +1094,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-02T04:30:00.000Z',
-    fetchedAt: 1795701305984,
+    lat: 45.5186098,
+    lng: -122.6859704,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-1065210',
@@ -993,7 +1107,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-01T17:00:00.000Z',
-    fetchedAt: 1795701305985,
+    lat: 28.539881,
+    lng: -81.3750543,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-1065262',
@@ -1004,7 +1120,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-07T22:00:00.000Z',
-    fetchedAt: 1795701305985,
+    lat: 28.5376724,
+    lng: -81.3795522,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-1068236',
@@ -1015,7 +1133,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-10T19:00:00.000Z',
-    fetchedAt: 1795701305985,
+    lat: 28.5484572,
+    lng: -81.3814416,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-1072852',
@@ -1026,7 +1146,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-05T21:30:00.000Z',
-    fetchedAt: 1795701305985,
+    fetchedAt: 1795703680735,
   },
   {
     id: 'mobilize-1081341',
@@ -1037,7 +1157,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-13T22:00:00.000Z',
-    fetchedAt: 1795701305985,
+    fetchedAt: 1795703680736,
   },
   {
     id: 'mobilize-1082311',
@@ -1048,7 +1168,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-12T05:00:00.000Z',
-    fetchedAt: 1795701305985,
+    lat: 26.3017374,
+    lng: -98.1633432,
+    fetchedAt: 1795703680736,
   },
   {
     id: 'mobilize-1082373',
@@ -1059,7 +1181,9 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     topics: ['policy'],
     type: 'event',
     deadline: '2026-12-11T01:00:00.000Z',
-    fetchedAt: 1795701305985,
+    lat: 28.5630364,
+    lng: -81.3438735,
+    fetchedAt: 1795703680736,
   },
   {
     id: 'curated-us-epa',
@@ -1069,7 +1193,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'US',
     topics: ['policy', 'energy'],
     type: 'comment',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
   },
   {
     id: 'curated-us-sierra',
@@ -1079,7 +1203,7 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'US',
     topics: ['energy', 'policy'],
     type: 'campaign',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
   },
   {
     id: 'curated-us-fossil',
@@ -1089,6 +1213,6 @@ export const CIVIC_ACTIONS: CivicAction[] = [
     region: 'US',
     topics: ['fossil-fuels', 'policy'],
     type: 'petition',
-    fetchedAt: 1795701309519,
+    fetchedAt: 1795703684053,
   },
 ];

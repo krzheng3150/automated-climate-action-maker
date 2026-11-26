@@ -15,6 +15,8 @@ export interface CivicAction {
   type: 'petition' | 'comment' | 'campaign' | 'event';
   signatures?: number;
   deadline?: string;
+  lat?: number;
+  lng?: number;
   fetchedAt: number;
 }
 
@@ -28,6 +30,23 @@ export interface CivicActionSource {
 
 export interface RankedCivicAction extends CivicAction {
   score: number;
+  distanceMi?: number;
+}
+
+export interface UserCoords {
+  lat: number;
+  lng: number;
+}
+
+function haversineDistanceMi(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export function matchCivicActions(
@@ -35,6 +54,7 @@ export function matchCivicActions(
   affinities: TopicAffinities,
   actions: CivicAction[],
   maxResults = 3,
+  userCoords?: UserCoords | null,
 ): RankedCivicAction[] {
   const now = Date.now();
 
@@ -70,7 +90,20 @@ export function matchCivicActions(
       score += 0.1;
     }
 
-    return { ...action, score };
+    // Proximity bonus for events with coordinates
+    let distanceMi: number | undefined;
+    if (userCoords && action.lat != null && action.lng != null) {
+      distanceMi = haversineDistanceMi(userCoords.lat, userCoords.lng, action.lat, action.lng);
+      if (distanceMi < 50) {
+        score += 0.5;
+      } else if (distanceMi < 150) {
+        score += 0.3;
+      } else if (distanceMi < 500) {
+        score += 0.1;
+      }
+    }
+
+    return { ...action, score, ...(distanceMi != null ? { distanceMi } : {}) };
   });
 
   scored.sort((a, b) => b.score - a.score);
