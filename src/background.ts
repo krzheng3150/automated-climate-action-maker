@@ -209,7 +209,7 @@ async function refreshLocationEstimate(): Promise<void> {
         source: 'background',
         level: 'info',
         event: 'LOCATION_ESTIMATED',
-        details: `City: ${estimate.city} (${estimate.country}), confidence: ${estimate.confidence.toFixed(2)}`,
+        details: `city=${estimate.city} country=${estimate.country} lat=${estimate.lat.toFixed(2)} lng=${estimate.lng.toFixed(2)} confidence=${estimate.confidence.toFixed(2)} sources=${estimate.sources}`,
       });
     }
   } catch (err) {
@@ -221,11 +221,25 @@ async function refreshBrowsingProfile(): Promise<void> {
   try {
     const profile = await extractBrowsingProfile();
     await chrome.storage.local.set({ [STORAGE_KEYS.BROWSING_PROFILE]: profile });
+
+    const sp = profile.shoppingProfile;
+    const topTopicEntries = (Object.entries(profile.topicSignals) as [string, number][])
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(' ');
+    const topMotivEntries = (Object.entries(profile.motivators) as [string, number][])
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => `${k}=${v}`)
+      .join(' ');
+
     recordDiagnostic({
       source: 'background',
       level: 'info',
       event: 'BROWSING_PROFILE_UPDATED',
-      details: `${profile.totalUniqueUrls} URLs over ${profile.lookbackDays}d, flexibility: ${profile.shoppingProfile.traitFlexibility}`,
+      details: `urls=${profile.totalUniqueUrls} days=${profile.lookbackDays} topics=[${topTopicEntries}] motivators=[${topMotivEntries}] flexibility=${sp.traitFlexibility} comparison=${sp.comparisonSitesCount} secondhand=${sp.secondhandSitesCount} retailers=${sp.retailerDiversity} categories=[${sp.recentCategories.join(',')}]`,
     });
   } catch (err) {
     console.error('[ACAM] Browsing profile extraction failed:', err);
@@ -647,6 +661,20 @@ async function getCivicActionsForUser(): Promise<CivicActionsResult> {
   const ranked = matchCivicActions(detected.country, affinities, CIVIC_ACTIONS, 3, userCoords);
   const fallbacks = getFallbackPlatforms(detected.country);
 
+  const topAff = topTopics(affinities, 5)
+    .map((t) => `${t}=${affinities[t].toFixed(2)}`)
+    .join(' ');
+  const rankedSummary = ranked
+    .map((a) => `${a.title.slice(0, 30)}(${a.score.toFixed(2)}${a.distanceMi != null ? ` ${Math.round(a.distanceMi)}mi` : ''})`)
+    .join(', ');
+
+  recordDiagnostic({
+    source: 'background',
+    level: 'info',
+    event: 'CIVIC_ACTIONS_COMPUTED',
+    details: `region=${detected.country}(${detected.confidence.toFixed(2)}) coords=${userCoords ? `${userCoords.lat.toFixed(1)},${userCoords.lng.toFixed(1)}` : 'none'} affinities=[${topAff}] results=${ranked.length}: ${rankedSummary}`,
+  });
+
   return {
     region: {
       country: detected.country,
@@ -668,14 +696,30 @@ async function checkSecondhandNudge(category?: string): Promise<{ show: boolean;
     import('./browsing/profile').BrowsingProfile | undefined;
 
   if (!profile) {
+    recordDiagnostic({
+      source: 'background',
+      level: 'info',
+      event: 'SECONDHAND_CHECK',
+      details: `category=${category ?? 'none'} profile=absent defaulting=show flexibility=0.35(baseline)`,
+    });
     return { show: true, flexibility: 0.35 };
   }
 
-  const flexibility = profile.shoppingProfile.traitFlexibility;
-  const activeCategories = profile.shoppingProfile.recentCategories;
-  const threshold = category && activeCategories.includes(category)
+  const sp = profile.shoppingProfile;
+  const flexibility = sp.traitFlexibility;
+  const activeCategories = sp.recentCategories;
+  const categoryActive = !!(category && activeCategories.includes(category));
+  const threshold = categoryActive
     ? FLEXIBILITY_THRESHOLD_ACTIVE_CATEGORY
     : FLEXIBILITY_THRESHOLD;
+  const show = flexibility >= threshold;
 
-  return { show: flexibility >= threshold, flexibility };
+  recordDiagnostic({
+    source: 'background',
+    level: 'info',
+    event: 'SECONDHAND_CHECK',
+    details: `category=${category ?? 'none'} flexibility=${flexibility} threshold=${threshold}${categoryActive ? '(active-category)' : ''} comparison=${sp.comparisonSitesCount} secondhand=${sp.secondhandSitesCount} retailers=${sp.retailerDiversity} activeCategories=[${activeCategories.join(',')}] → ${show ? 'SHOW' : 'SUPPRESS'}`,
+  });
+
+  return { show, flexibility };
 }
