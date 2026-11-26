@@ -50,13 +50,15 @@ try {
   const extensionId = new URL(extensionUrl).host;
   reportPass(`Extension initialized with ID: ${extensionId}`);
 
-  // Close any tabs the extension opened on install (e.g. welcome page)
-  await new Promise((r) => setTimeout(r, 1500));
-  const existingPages = await browser.pages();
-  for (const p of existingPages) {
-    const u = p.url();
-    if (u.includes('welcome.html')) await p.close();
-  }
+  // Close the welcome tab the extension opens on install
+  try {
+    const welcomeTarget = await browser.waitForTarget(
+      (t) => t.url().includes('welcome.html'),
+      { timeout: 5000 }
+    );
+    const welcomePage = await welcomeTarget.asPage();
+    if (welcomePage) await welcomePage.close();
+  } catch {}
 
   // -------------------------------------------------------------
   // GUARDRAIL 1: Zero Outbound Network Requests During History Stream

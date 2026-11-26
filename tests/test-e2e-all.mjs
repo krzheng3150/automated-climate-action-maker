@@ -33,11 +33,18 @@ try {
   const extensionId = new URL(workerTarget.url()).host;
   console.log('[1/4] Background worker active with ID:', extensionId);
 
-  // Close any tabs the extension opened on install (e.g. welcome page)
-  const existingPages = await browser.pages();
-  for (const p of existingPages) {
-    const u = p.url();
-    if (u.includes('welcome.html')) await p.close();
+  // Close the welcome tab the extension opens on install
+  try {
+    const welcomeTarget = await browser.waitForTarget(
+      (t) => t.url().includes('welcome.html'),
+      { timeout: 5000 }
+    );
+    const welcomePage = await welcomeTarget.asPage();
+    if (welcomePage) await welcomePage.close();
+  } catch {}
+  // Also close any stray about:blank tabs
+  for (const p of await browser.pages()) {
+    if (p.url() === 'about:blank') await p.close().catch(() => {});
   }
 
   // 2. Test Scenario A (Civic Action Overlay)
@@ -127,12 +134,16 @@ try {
   // 4. Test Background Storage & Popup Trace Stream
   const popupPage = await browser.newPage();
   const popupUrl = `chrome-extension://${extensionId}/popup.html`;
-  await popupPage.goto(popupUrl, { waitUntil: 'networkidle0' });
+  await popupPage.goto(popupUrl, { waitUntil: 'domcontentloaded' });
+  await new Promise((r) => setTimeout(r, 800));
 
   // Verify stored points from interactions
-  const storageData = await popupPage.evaluate(async () => {
-    return await chrome.storage.local.get('stats');
-  });
+  const storageData = await Promise.race([
+    popupPage.evaluate(async () => {
+      return await chrome.storage.local.get('stats');
+    }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('storage.local.get timed out')), 15000)),
+  ]);
   const stats = storageData.stats || {};
   console.log(`[4/4] Impact stats in storage: Civic Points = ${stats.civicPoints}, CO2 Saved = ${stats.totalCo2SavedKg} kg`);
 
@@ -149,9 +160,12 @@ try {
   if (outboundUrl.searchParams.get('q') !== 'ThinkPad T14') {
     throw new Error(`Outbound URL lost the product query: ${outboundTab.url()}`);
   }
-  const diagnostics = await popupPage.evaluate(async () => {
-    return (await chrome.storage.local.get('diagnosticsLog')).diagnosticsLog || [];
-  });
+  const diagnostics = await Promise.race([
+    popupPage.evaluate(async () => {
+      return (await chrome.storage.local.get('diagnosticsLog')).diagnosticsLog || [];
+    }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('diagnosticsLog read timed out')), 15000)),
+  ]);
   const outboundMarkers = diagnostics.filter((d) => d.event === 'OUTBOUND_OPEN');
   if (!outboundMarkers.some((d) => d.details.includes('partner=backmarket') && d.details.includes('host=www.backmarket.com'))) {
     throw new Error('Opened tab has no matching OUTBOUND_OPEN marker: it bypassed the helper');
