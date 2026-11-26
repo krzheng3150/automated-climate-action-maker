@@ -715,7 +715,6 @@ class ACAMContentScript {
     card.appendChild(actionContainer);
 
     if (scenario === 'scenario-c' && category) {
-      this.recordNudgeShown(category);
       recordDiagnostic({
         source: 'content',
         level: 'info',
@@ -770,6 +769,7 @@ class ACAMContentScript {
         const targetUrl = buildSearchUrl(provider, productTitle);
 
         btn.addEventListener('click', () => {
+          if (category) this.recordNudgeShown(category);
           recordDiagnostic({
             source: 'content',
             level: 'info',
@@ -787,6 +787,7 @@ class ACAMContentScript {
 
     closeBtn.addEventListener('click', () => {
       if (category) {
+        this.recordNudgeShown(category);
         recordDiagnostic({
           source: 'content',
           level: 'info',
