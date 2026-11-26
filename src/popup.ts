@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function formatCooldown(hours: number): string {
     if (hours === -1) return 'Disabled';
+    if (hours === 0) return 'Always';
     if (hours < 24) return `Every ${hours}h`;
     const days = Math.round(hours / 24);
     return `Every ${days}d`;
@@ -211,6 +212,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!autoScanToggle) return;
     await chrome.storage.local.set({
       [STORAGE_KEYS.AUTO_SCAN_ENABLED]: autoScanToggle.checked,
+    });
+  });
+
+  const alwaysOnToggle = document.getElementById('always-on-toggle') as HTMLInputElement | null;
+
+  async function loadAlwaysOnState(): Promise<void> {
+    if (!alwaysOnToggle) return;
+    const data = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_ALWAYS_ON);
+    alwaysOnToggle.checked = data[STORAGE_KEYS.NUDGE_ALWAYS_ON] === true;
+  }
+
+  alwaysOnToggle?.addEventListener('change', async () => {
+    if (!alwaysOnToggle) return;
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.NUDGE_ALWAYS_ON]: alwaysOnToggle.checked,
     });
   });
 
@@ -355,6 +371,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.USER_REGION_OVERRIDE,
       STORAGE_KEYS.NUDGE_COOLDOWNS,
       STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES,
+      STORAGE_KEYS.NUDGE_ALWAYS_ON,
       STORAGE_KEYS.USER_LOCATION_ESTIMATE,
       STORAGE_KEYS.BROWSING_PROFILE,
     ]);
@@ -445,6 +462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkPermissions();
   await loadCachedScan();
   await loadAutoScanState();
+  await loadAlwaysOnState();
   await loadNudgeOverrides();
   await loadDiagnostics();
   await loadFeedbackCount();

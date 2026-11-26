@@ -26,6 +26,7 @@ assert(DEFAULT_NUDGE_COOLDOWN_HOURS === 22, `Default cooldown is 22 hours (got $
 // --------------------------------------------------------------------------
 assert(STORAGE_KEYS.NUDGE_COOLDOWNS === 'nudgeCooldowns', 'NUDGE_COOLDOWNS storage key registered');
 assert(STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES === 'nudgeCategoryOverrides', 'NUDGE_CATEGORY_OVERRIDES storage key registered');
+assert(STORAGE_KEYS.NUDGE_ALWAYS_ON === 'nudgeAlwaysOn', 'NUDGE_ALWAYS_ON storage key registered');
 
 // --------------------------------------------------------------------------
 // 3. First visit (no prior timestamp) — always allowed
@@ -134,7 +135,45 @@ assert(
 );
 
 // --------------------------------------------------------------------------
-// 10. 30-day override
+// 10. Always-on flag overrides everything
+// --------------------------------------------------------------------------
+assert(
+  resolveNudgeCooldown({
+    category: 'electronics',
+    now: NOW,
+    cooldowns: { electronics: NOW - 1 * HOUR },
+    overrides: {},
+    alwaysOn: true,
+  }) === true,
+  'Always-on: allowed even within cooldown window'
+);
+
+assert(
+  resolveNudgeCooldown({
+    category: 'books',
+    now: NOW,
+    cooldowns: {},
+    overrides: { books: -1 },
+    alwaysOn: true,
+  }) === true,
+  'Always-on: overrides per-category disable'
+);
+
+// --------------------------------------------------------------------------
+// 11. Per-category "Always" preset (hours = 0)
+// --------------------------------------------------------------------------
+assert(
+  resolveNudgeCooldown({
+    category: 'electronics',
+    now: NOW,
+    cooldowns: { electronics: NOW - 1000 },
+    overrides: { electronics: 0 },
+  }) === true,
+  'Per-category Always (0h): allowed even with recent cooldown'
+);
+
+// --------------------------------------------------------------------------
+// 12. 30-day override
 // --------------------------------------------------------------------------
 assert(
   resolveNudgeCooldown({

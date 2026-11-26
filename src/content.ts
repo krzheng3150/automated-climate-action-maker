@@ -17,6 +17,7 @@ type ProductCategory = 'electronics' | 'fashion' | 'books' | 'home';
 const DEFAULT_COOLDOWN_HOURS = 22;
 
 const FREQUENCY_PRESETS = [
+  { label: 'Always', hours: 0 },
   { label: '22h', hours: 22 },
   { label: '3d', hours: 72 },
   { label: '7d', hours: 168 },
@@ -391,12 +392,14 @@ class ACAMContentScript {
     const data = await chrome.storage.local.get([
       STORAGE_KEYS.NUDGE_COOLDOWNS,
       STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES,
+      STORAGE_KEYS.NUDGE_ALWAYS_ON,
     ]);
     return resolveNudgeCooldown({
       category,
       now: Date.now(),
       cooldowns: data[STORAGE_KEYS.NUDGE_COOLDOWNS] ?? {},
       overrides: data[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {},
+      alwaysOn: data[STORAGE_KEYS.NUDGE_ALWAYS_ON] === true,
     });
   }
 
