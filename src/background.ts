@@ -25,6 +25,7 @@ import { resolveRegion, computeTopicAffinities, topTopics, matchCivicActions, ge
 import type { RankedCivicAction } from './civic';
 import { CIVIC_ACTIONS } from './civic/data';
 import { estimateUserLocation } from './civic/location';
+import { extractBrowsingProfile } from './browsing';
 import { REWARDS } from './rewards';
 
 /**
@@ -216,6 +217,21 @@ async function refreshLocationEstimate(): Promise<void> {
   }
 }
 
+async function refreshBrowsingProfile(): Promise<void> {
+  try {
+    const profile = await extractBrowsingProfile();
+    await chrome.storage.local.set({ [STORAGE_KEYS.BROWSING_PROFILE]: profile });
+    recordDiagnostic({
+      source: 'background',
+      level: 'info',
+      event: 'BROWSING_PROFILE_UPDATED',
+      details: `${profile.totalUniqueUrls} URLs over ${profile.lookbackDays}d, flexibility: ${profile.shoppingProfile.traitFlexibility}`,
+    });
+  } catch (err) {
+    console.error('[ACAM] Browsing profile extraction failed:', err);
+  }
+}
+
 // Conservative Fallback Alarm Listener
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === CONSERVATIVE_ALARM_NAME) {
@@ -223,6 +239,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
   if (alarm.name === LOCATION_ALARM_NAME) {
     await refreshLocationEstimate();
+    await refreshBrowsingProfile();
   }
 });
 
@@ -606,6 +623,7 @@ async function getCivicActionsForUser(): Promise<CivicActionsResult> {
     STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
     STORAGE_KEYS.USER_REGION_OVERRIDE,
     STORAGE_KEYS.USER_LOCATION_ESTIMATE,
+    STORAGE_KEYS.BROWSING_PROFILE,
   ]);
 
   const snapshot = data[STORAGE_KEYS.FOOTPRINT_SNAPSHOT] as DigitalFootprintSnapshot | null;
@@ -614,9 +632,11 @@ async function getCivicActionsForUser(): Promise<CivicActionsResult> {
   const locationEstimate = data[STORAGE_KEYS.USER_LOCATION_ESTIMATE] as
     { lat: number; lng: number } | undefined;
   const userCoords = locationEstimate ? { lat: locationEstimate.lat, lng: locationEstimate.lng } : null;
+  const browsingProfile = data[STORAGE_KEYS.BROWSING_PROFILE] as
+    import('./browsing/profile').BrowsingProfile | undefined;
 
   const detected = resolveRegion(topDomains, override);
-  const affinities = computeTopicAffinities(snapshot);
+  const affinities = computeTopicAffinities(snapshot, false, browsingProfile?.topicSignals);
   const ranked = matchCivicActions(detected.country, affinities, CIVIC_ACTIONS, 3, userCoords);
   const fallbacks = getFallbackPlatforms(detected.country);
 

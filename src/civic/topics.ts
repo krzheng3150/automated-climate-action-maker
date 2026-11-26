@@ -128,29 +128,41 @@ function emptyAffinities(): TopicAffinities {
 export function computeTopicAffinities(
   snapshot: DigitalFootprintSnapshot | null,
   foodSwapEngaged = false,
+  pathTopicSignals?: Record<ClimateTopic, number> | null,
 ): TopicAffinities {
   const affinities = emptyAffinities();
 
-  if (!snapshot) {
+  if (!snapshot && !pathTopicSignals) {
     affinities.energy = 0.3;
     affinities.policy = 0.3;
     return affinities;
   }
 
-  // Layer 1: Archetype-based scores
-  const dist = snapshot.projection?.archetypeDistribution;
+  // Layer 1: Path-extracted topic signals (primary — broadest coverage)
+  if (pathTopicSignals) {
+    const totalHits = Object.values(pathTopicSignals).reduce((s, v) => s + v, 0) || 1;
+    for (const topic of ALL_TOPICS) {
+      const count = pathTopicSignals[topic] ?? 0;
+      if (count > 0) {
+        affinities[topic] += Math.min(0.8, (count / totalHits) * 3);
+      }
+    }
+  }
+
+  // Layer 2: Archetype-based scores (coarse behavioral profile)
+  const dist = snapshot?.projection?.archetypeDistribution;
   if (dist) {
     for (const [archetype, weight] of Object.entries(dist) as [ArchetypeKey, number][]) {
       const topics = ARCHETYPE_TOPICS[archetype];
       if (!topics) continue;
       for (const [topic, score] of Object.entries(topics) as [ClimateTopic, number][]) {
-        affinities[topic] += score * weight;
+        affinities[topic] += score * weight * 0.5;
       }
     }
   }
 
-  // Layer 2: Domain-based enrichment
-  const topDomains: DomainFrequency[] = snapshot.sources?.history?.topDomains ?? [];
+  // Layer 3: Exact domain enrichment (high precision, low coverage)
+  const topDomains: DomainFrequency[] = snapshot?.sources?.history?.topDomains ?? [];
   const totalVisits = topDomains.reduce((sum, d) => sum + d.count, 0) || 1;
 
   for (const { domain, count } of topDomains) {
@@ -163,7 +175,7 @@ export function computeTopicAffinities(
     }
   }
 
-  // Layer 3: Food swap engagement signal
+  // Layer 4: Food swap engagement signal
   if (foodSwapEngaged) {
     affinities.food += 0.3;
   }
