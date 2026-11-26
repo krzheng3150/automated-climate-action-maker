@@ -220,8 +220,9 @@ class ACAMContentScript {
       return 'scenario-a';
     }
 
-    // Scenario C: E-commerce shopping, product pages, and checkout
-    const isShopping =
+    // Scenario C: E-commerce product pages and checkout
+    // Require a product-path signal — homepages and landing pages are excluded.
+    const isShoppingDomain =
       hostname.includes('amazon.') ||
       hostname.includes('ebay.') ||
       hostname.includes('walmart.') ||
@@ -248,16 +249,23 @@ class ACAMContentScript {
       hostname.includes('potterybarn.com') ||
       hostname.includes('crateandbarrel.com') ||
       hostname.includes('westelm.com') ||
-      hostname.includes('overstock.com') ||
+      hostname.includes('overstock.com');
+
+    const isProductPath =
       pathname.includes('/dp/') ||
       pathname.includes('/ip/') ||
       pathname.includes('/product') ||
       pathname.includes('/item') ||
+      pathname.includes('/gp/product') ||
       pathname.includes('/cart') ||
       pathname.includes('/checkout') ||
-      pathname.includes('/basket');
+      pathname.includes('/basket') ||
+      /\/[a-z]+-[a-z]+-[a-z]+\/\d/.test(pathname) ||
+      pathname.includes('/shop/') ||
+      pathname.includes('/buy/') ||
+      pathname.includes('/p/');
 
-    if (isShopping) {
+    if (isProductPath) {
       return 'scenario-c';
     }
 
