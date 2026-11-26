@@ -804,6 +804,10 @@ class ACAMContentScript {
       card.appendChild(freqRow);
     }
 
+    const recId = scenario === 'scenario-a' ? 'civic_action' : `circular_${category ?? 'unknown'}`;
+    const recTitle = scenario === 'scenario-a' ? 'Civic Action' : `${category ?? 'Shopping'} Nudge`;
+    card.appendChild(this.buildFeedbackSection(recId, recTitle));
+
     closeBtn.addEventListener('click', () => {
       if (category) {
         this.recordNudgeShown(category);
@@ -987,11 +991,10 @@ class ACAMContentScript {
     successBox.appendChild(successTitle);
     successBox.appendChild(successSub);
 
-    if (!recContext) {
-      actionContainer.replaceChildren(successBox);
-      return;
-    }
+    actionContainer.replaceChildren(successBox);
+  }
 
+  private buildFeedbackSection(recId: string, recTitle: string): HTMLElement {
     const feedback = document.createElement('div');
     feedback.className = 'feedback-section';
 
@@ -1040,12 +1043,7 @@ class ACAMContentScript {
       chrome.runtime.sendMessage(
         {
           type: 'RECORD_FEEDBACK',
-          payload: {
-            recId: recContext.recId,
-            recTitle: recContext.recTitle,
-            vote: selectedVote,
-            comment: commentInput.value.trim(),
-          },
+          payload: { recId, recTitle, vote: selectedVote, comment: commentInput.value.trim() },
         },
         () => {
           submitBtn.textContent = '✓ Thanks! +10 pts';
@@ -1054,7 +1052,7 @@ class ACAMContentScript {
     });
 
     feedback.append(label, voteRow, commentInput, submitBtn);
-    actionContainer.replaceChildren(successBox, feedback);
+    return feedback;
   }
 
   private executeCivicAction(card: HTMLElement, actionUrl: string | null): void {
@@ -1082,40 +1080,7 @@ class ACAMContentScript {
         this.showSuccessMessage(
           card,
           '✓ Civic Action Opened!',
-          '+50 points earned | Every signature counts',
-          { recId: 'civic_petition_sent', recTitle: 'Civic Action' }
-        );
-      }
-    );
-  }
-
-  private executeCircularRedirect(targetUrl: string, provider: string, card: HTMLElement): void {
-    recordDiagnostic({
-      source: 'content',
-      level: 'info',
-      event: 'CIRCULAR_REDIRECT',
-      details: `Dispatched circular marketplace redirect: ${provider} (+80 pts)`,
-    });
-    if (targetUrl) {
-      openOutbound(targetUrl, { source: 'content', placement: 'in-page' });
-    }
-
-    chrome.runtime.sendMessage(
-      {
-        type: 'RECORD_ACTION',
-        payload: {
-          actionId: 'circular_marketplace_search',
-          label: `${provider} Search`,
-          co2SavedKg: REWARDS.circularSearch.co2SavedKg,
-          points: REWARDS.circularSearch.points,
-        },
-      },
-      () => {
-        this.showSuccessMessage(
-          card,
-          `✓ ${provider} Opened!`,
-          '+80 pts | Up to ~65 kg embodied CO₂ saved',
-          { recId: 'circular_marketplace_search', recTitle: `${provider} Search` }
+          '+50 points earned | Every signature counts'
         );
       }
     );
