@@ -3,7 +3,7 @@
 // the extension. The extension never makes network calls itself.
 //
 // Usage: node scripts/fetch-civic-actions.mjs
-// Sources: UK Parliament Petitions API, 350.org campaigns page
+// Sources: UK Parliament Petitions API, Mobilize US events API, 350.org campaigns page
 
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -83,6 +83,136 @@ async function fetchUKPetitions() {
   }
 
   return dedup(actions);
+}
+
+// ---------------------------------------------------------------------------
+// Mobilize (MobilizeAmerica) public API — US civic events
+// Free, no auth required, 15 req/sec. Docs: github.com/mobilizeamerica/api
+// ---------------------------------------------------------------------------
+
+const MOBILIZE_BASE = 'https://api.mobilize.us/v1';
+
+// Known climate/environment org IDs on Mobilize (discovered via API scan).
+// Events from these orgs are included without keyword filtering.
+const MOBILIZE_CLIMATE_ORG_IDS = [
+  1094,   // Food & Water Action
+  2425,   // Sunrise Movement
+  9147,   // Food & Water Watch
+  29504,  // New Jersey League of Conservation Voters
+  37003,  // Rock Creek Conservancy Inc.
+  37405,  // Minnesota Environmental Justice Table / Zero Burn Coalition
+];
+
+const CLIMATE_ORG_NAME_KEYWORDS = [
+  'climate', 'sunrise', 'sierra', 'greenpeace', 'earth', 'environ',
+  'nature conserv', 'lcv', 'league of conservation', 'clean energy',
+  'fossil', 'audubon', 'water watch', 'food & water', 'food and water',
+  'nrdc', 'earthjustice', 'defenders of wildlife', 'wilderness',
+  'rainforest', 'chesapeake', 'appalachian', 'ocean', 'solar',
+  'clean air', 'zero burn', 'conservancy',
+];
+
+const CLIMATE_TITLE_KEYWORDS = [
+  'climate', 'renewable energy', 'clean energy', 'fossil fuel', 'fracking',
+  'carbon', 'net zero', 'green new deal', 'earth day', 'reforestation',
+  'tree planting', 'climate strike', 'climate action', 'climate justice',
+  'climate march', 'environmental justice', 'clean air', 'clean water',
+  'pollution', 'emissions', 'biodiversity', 'deforestation', 'conservation',
+  'sustainability', 'recycling', 'ocean cleanup', 'wetland restoration',
+  'endangered species', 'wildfire', 'solar', 'wind energy',
+];
+
+function isClimateOrg(sponsor) {
+  if (!sponsor) return false;
+  if (MOBILIZE_CLIMATE_ORG_IDS.includes(sponsor.id)) return true;
+  const name = (sponsor.name || '').toLowerCase();
+  return CLIMATE_ORG_NAME_KEYWORDS.some((kw) => name.includes(kw));
+}
+
+function isClimateTitle(title) {
+  const lower = title.toLowerCase();
+  return CLIMATE_TITLE_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+function mobilizeTypeToAcam(eventType) {
+  if (eventType === 'PETITION' || eventType === 'SIGNATURE_GATHERING') return 'petition';
+  if (eventType === 'LETTER_WRITING' || eventType === 'ADVOCACY_CALL') return 'campaign';
+  return 'event';
+}
+
+function parseMobilizeEvent(ev) {
+  const title = (ev.title || '').trim();
+  const timeslots = (ev.timeslots || []).filter((ts) => ts.start_date * 1000 > Date.now());
+  const nextSlot = timeslots[0];
+  const deadline = nextSlot ? new Date(nextSlot.end_date * 1000).toISOString() : undefined;
+  const loc = ev.location || {};
+  const locality = loc.locality || '';
+  const state = loc.region || '';
+  const locationLabel = [locality, state].filter(Boolean).join(', ');
+  const desc = (ev.description || '').replace(/<[^>]+>/g, ' ').trim();
+
+  return {
+    id: `mobilize-${ev.id}`,
+    title: locationLabel ? `${title} — ${locationLabel}` : title,
+    url: ev.browser_url || `https://www.mobilize.us/events/${ev.id}`,
+    platform: 'Mobilize',
+    region: 'US',
+    topics: inferTopics(`${title} ${desc}`),
+    type: mobilizeTypeToAcam(ev.event_type || 'OTHER'),
+    deadline,
+    fetchedAt: Date.now(),
+  };
+}
+
+async function fetchMobilizePage(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+async function fetchMobilizeEvents() {
+  const actions = [];
+  const maxActions = 40;
+  const maxPages = 20;
+  const seen = new Set();
+
+  // Strategy 1: Fetch events from known climate orgs (high precision)
+  for (const orgId of MOBILIZE_CLIMATE_ORG_IDS) {
+    try {
+      const json = await fetchMobilizePage(
+        `${MOBILIZE_BASE}/organizations/${orgId}/events?timeslot_start=gte_now&per_page=25`,
+      );
+      for (const ev of json.data || []) {
+        if (seen.has(ev.id)) continue;
+        seen.add(ev.id);
+        actions.push(parseMobilizeEvent(ev));
+      }
+    } catch (err) {
+      console.warn(`  Mobilize org ${orgId} failed:`, err.message);
+    }
+  }
+
+  // Strategy 2: Scan general events feed, include if sponsor is a climate org
+  // or event title has strong climate keywords
+  let url = `${MOBILIZE_BASE}/events?timeslot_start=gte_now&per_page=100`;
+  for (let page = 0; page < maxPages && actions.length < maxActions; page++) {
+    try {
+      const json = await fetchMobilizePage(url);
+      for (const ev of json.data || []) {
+        if (seen.has(ev.id)) continue;
+        if (!isClimateOrg(ev.sponsor) && !isClimateTitle(ev.title || '')) continue;
+        seen.add(ev.id);
+        actions.push(parseMobilizeEvent(ev));
+      }
+      if (!json.next) break;
+      url = json.next;
+    } catch (err) {
+      console.warn(`  Mobilize page ${page + 1} failed:`, err.message);
+      break;
+    }
+  }
+
+  return dedup(actions).slice(0, maxActions);
 }
 
 // ---------------------------------------------------------------------------
@@ -295,6 +425,7 @@ async function main() {
 
   const results = await Promise.allSettled([
     fetchUKPetitions().then((r) => { console.log(`  UK Parliament: ${r.length} petitions`); return r; }),
+    fetchMobilizeEvents().then((r) => { console.log(`  Mobilize: ${r.length} US events`); return r; }),
     fetch350Campaigns().then((r) => { console.log(`  350.org: ${r.length} campaigns`); return r; }),
   ]);
 
