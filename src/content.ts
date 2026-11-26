@@ -608,6 +608,11 @@ class ACAMContentScript {
         font-size: 11px;
       }
       .circular-btn:hover { background: #059669; color: #ffffff; }
+      .circular-btn.clicked {
+        background: #059669; color: #ffffff;
+        cursor: default; opacity: 0.8;
+      }
+      .circular-btn.clicked:hover { opacity: 0.8; }
       .success-box {
         text-align: center;
         padding: 8px 4px;
@@ -780,6 +785,7 @@ class ACAMContentScript {
         const targetUrl = buildSearchUrl(provider, productTitle);
 
         btn.addEventListener('click', () => {
+          if (btn.classList.contains('clicked')) return;
           if (category) this.recordNudgeShown(category);
           recordDiagnostic({
             source: 'content',
@@ -787,7 +793,9 @@ class ACAMContentScript {
             event: 'NUDGE_CLICKED',
             details: `Category: ${category}, partner: ${provider.name}`,
           });
-          this.executeCircularRedirect(targetUrl, provider.name, card);
+          btn.classList.add('clicked');
+          btn.textContent = `✓ ${provider.name}`;
+          this.executeCircularRedirectQuiet(targetUrl, provider.name);
         });
         actionContainer.appendChild(btn);
       }
@@ -981,7 +989,6 @@ class ACAMContentScript {
 
     if (!recContext) {
       actionContainer.replaceChildren(successBox);
-      setTimeout(() => this.removePrompt(), 2500);
       return;
     }
 
@@ -1042,15 +1049,12 @@ class ACAMContentScript {
         },
         () => {
           submitBtn.textContent = '✓ Thanks! +10 pts';
-          setTimeout(() => this.removePrompt(), 1500);
         }
       );
     });
 
     feedback.append(label, voteRow, commentInput, submitBtn);
     actionContainer.replaceChildren(successBox, feedback);
-
-    setTimeout(() => this.removePrompt(), 15000);
   }
 
   private executeCivicAction(card: HTMLElement, actionUrl: string | null): void {
@@ -1115,6 +1119,28 @@ class ACAMContentScript {
         );
       }
     );
+  }
+
+  private executeCircularRedirectQuiet(targetUrl: string, provider: string): void {
+    recordDiagnostic({
+      source: 'content',
+      level: 'info',
+      event: 'CIRCULAR_REDIRECT',
+      details: `Dispatched circular marketplace redirect: ${provider} (+80 pts)`,
+    });
+    if (targetUrl) {
+      openOutbound(targetUrl, { source: 'content', placement: 'in-page' });
+    }
+
+    chrome.runtime.sendMessage({
+      type: 'RECORD_ACTION',
+      payload: {
+        actionId: 'circular_marketplace_search',
+        label: `${provider} Search`,
+        co2SavedKg: REWARDS.circularSearch.co2SavedKg,
+        points: REWARDS.circularSearch.points,
+      },
+    });
   }
 
   private removePrompt(): void {
