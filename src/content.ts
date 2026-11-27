@@ -778,7 +778,11 @@ class ACAMContentScript {
       const productTitle = this.extractProductTitle();
       snippetEl.textContent = `Target: ${productTitle} (${catConfig?.co2Note ?? 'Save up to ~65 kg CO₂e'})`;
 
-      for (const provider of partnersInGroup(catConfig?.group ?? 'circular_marketplace')) {
+      const group = catConfig?.group ?? 'circular_marketplace';
+      const partners = partnersInGroup(group);
+      const btnMap: Record<string, HTMLButtonElement> = {};
+
+      for (const provider of partners) {
         const btn = document.createElement('button');
         btn.className = 'btn circular-btn';
         btn.textContent = provider.name;
@@ -798,7 +802,27 @@ class ACAMContentScript {
           this.executeCircularRedirectQuiet(targetUrl, provider.name);
         });
         actionContainer.appendChild(btn);
+        btnMap[provider.id] = btn;
       }
+
+      chrome.runtime.sendMessage(
+        { type: 'CHECK_AVAILABILITY', payload: { group, query: productTitle } },
+        (resp) => {
+          if (!resp?.availability) return;
+          const avail: Record<string, boolean> = resp.availability;
+          let anyVisible = false;
+          for (const [id, btn] of Object.entries(btnMap)) {
+            if (avail[id] === false && !btn.classList.contains('clicked')) {
+              btn.style.display = 'none';
+            } else {
+              anyVisible = true;
+            }
+          }
+          if (!anyVisible) {
+            snippetEl.textContent = `No refurbished listings found for "${productTitle}"`;
+          }
+        },
+      );
 
       const freqRow = this.buildFrequencyDial(category!);
       card.appendChild(freqRow);

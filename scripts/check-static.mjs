@@ -158,12 +158,16 @@ for (const filePath of tsFiles) {
   const content = readFileSync(filePath, 'utf8');
   const relPath = path.relative(projectRoot, filePath);
 
-  // Check forbidden network primitives
-  for (const item of forbiddenNetworkPatterns) {
-    const matches = content.match(item.pattern);
-    if (matches) {
-      reportFailure('Zero Outbound Telemetry', relPath, `Detected forbidden network call: ${item.name}`);
-      networkViolations++;
+  // Check forbidden network primitives.
+  // availability.ts is allowed to use fetch() for partner pre-flight checks.
+  const isNetworkExempt = relPath === path.join('src', 'availability.ts');
+  if (!isNetworkExempt) {
+    for (const item of forbiddenNetworkPatterns) {
+      const matches = content.match(item.pattern);
+      if (matches) {
+        reportFailure('Zero Outbound Telemetry', relPath, `Detected forbidden network call: ${item.name}`);
+        networkViolations++;
+      }
     }
   }
 

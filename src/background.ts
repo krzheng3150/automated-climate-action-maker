@@ -28,7 +28,8 @@ import { estimateUserLocation } from './civic/location';
 import { extractBrowsingProfile } from './browsing';
 import type { ToneTag } from './browsing/profile';
 import { REWARDS } from './rewards';
-import { openExtensionPage } from './outbound';
+import { openExtensionPage, partnersInGroup } from './outbound';
+import { checkPartnerAvailability } from './availability';
 
 /**
  * Automated Climate Action Maker (ACAM) - Background Service Worker
@@ -533,6 +534,19 @@ chrome.runtime.onMessage.addListener(
       checkSecondhandNudge(msg.payload?.category).then((result) => {
         sendResponse(result);
       });
+      return true;
+    }
+
+    if (msg.type === 'CHECK_AVAILABILITY') {
+      const { group, query } = msg.payload ?? {};
+      if (group && query) {
+        const partners = partnersInGroup(group);
+        checkPartnerAvailability(partners, query).then((availability) => {
+          sendResponse({ availability });
+        });
+      } else {
+        sendResponse({ availability: {} });
+      }
       return true;
     }
 

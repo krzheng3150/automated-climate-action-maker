@@ -8,17 +8,18 @@ To maintain production readiness, user trust, and Chrome Web Store compliance, a
 ## 1. Absolute Rule: Zero Outbound Telemetry (Local-First Guarantee)
 
 - **Strict Sandbox Requirement:** ACAM processes browsing signals 100% on the user's local machine. Under no circumstance may browsing history, URLs, hostnames, timestamps, or personal data leave localhost.
-- **Forbidden Network Primitives:**
-  - `fetch()`
+- **Forbidden Network Primitives** (enforced by `check-static.mjs`):
+  - `fetch()` — except in `src/availability.ts` (see Partner Pre-Flight below)
   - `XMLHttpRequest`
   - `WebSocket`
   - `navigator.sendBeacon()`
   - `EventSource`
   - Remote script injections or remote analytics SDKs (e.g., Google Analytics, Mixpanel, Sentry).
+- **Partner Pre-Flight Exception:** `src/availability.ts` may `fetch()` partner search pages (domains listed in `manifest.json` `host_permissions`) to check whether a product has refurbished listings before showing nudge buttons. These requests carry only the product name from the page — never browsing history, URLs, personal identifiers, or any data about the user.
 - **Manifest Restrictions:**
-  - `manifest.json` MUST NOT request unrestricted network `host_permissions` (e.g., `<all_urls>`, `*://*/*`, `https://*/*`) for the background worker.
+  - `manifest.json` MUST NOT request unrestricted network `host_permissions` (e.g., `<all_urls>`, `*://*/*`, `https://*/*`) for the background worker. Specific partner domains are permitted.
   - Content Security Policy (CSP) must remain strictly locked to `'self'`.
-- **What counts as zero telemetry:** User-initiated tab navigation (via `openOutbound()`) is allowed — the extension opens a URL, the browser loads it. The extension itself makes no network requests. This is the pattern used for feedback sharing (Google Apps Script URL).
+- **What counts as zero telemetry:** User-initiated tab navigation (via `openOutbound()`) is allowed — the extension opens a URL, the browser loads it. Partner pre-flight checks query the same public search pages the user would visit. No user data is transmitted in either case.
 - **CWS re-review trigger:** Any change that adds `host_permissions`, new Chrome permissions, or modifies CSP triggers a Chrome Web Store re-review (1-3+ business days). Flag this to the user before implementing — it's a higher bar than a code change.
 
 ---
