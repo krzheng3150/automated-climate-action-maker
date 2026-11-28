@@ -1167,19 +1167,26 @@ class ACAMContentScript {
 
     const submitBtn = document.createElement('button');
     submitBtn.className = 'btn-feedback';
-    submitBtn.textContent = 'Submit Feedback (+10 pts)';
+    submitBtn.textContent = 'Share with developer (+10 pts)';
     submitBtn.disabled = true;
 
     submitBtn.addEventListener('click', () => {
       if (!selectedVote) return;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
+      const comment = commentInput.value.trim();
       chrome.runtime.sendMessage(
         {
           type: 'RECORD_FEEDBACK',
-          payload: { recId, recTitle, vote: selectedVote, comment: commentInput.value.trim() },
+          payload: { recId, recTitle, vote: selectedVote, comment },
         },
         () => {
+          if (FEEDBACK_APPS_SCRIPT_URL) {
+            const entry = { recId, recTitle, vote: selectedVote!, comment, timestamp: Date.now() };
+            const tsv = formatFeedbackTSV([entry]);
+            const encoded = encodeURIComponent(tsv.slice(0, 1800));
+            openOutbound(`${FEEDBACK_APPS_SCRIPT_URL}?feedback=${encoded}`, { source: 'content', placement: 'share-feedback' });
+          }
           submitBtn.textContent = '✓ Thanks! +10 pts';
         }
       );
