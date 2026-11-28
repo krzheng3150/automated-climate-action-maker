@@ -3,52 +3,65 @@ import type { ArchetypeKey, DigitalFootprintSnapshot, DomainFrequency } from '..
 /**
  * Derives climate topic affinities from local browsing signals.
  * No network calls — uses archetype scores + domain categorization.
+ *
+ * Taxonomy aligned with Drawdown / IPCC AR6 sectors + engagement styles.
+ * Sector tags: energy, transport, built-environment, food-land, nature,
+ *              industry-materials, policy
+ * Engagement tags: community, professional, hands-on, advocacy, learning, creative
  */
 
 export type ClimateTopic =
   | 'energy'
   | 'transport'
-  | 'food'
-  | 'fossil-fuels'
-  | 'conservation'
-  | 'waste'
+  | 'built-environment'
+  | 'food-land'
+  | 'nature'
+  | 'industry-materials'
   | 'policy'
-  | 'circular-economy';
+  | 'community'
+  | 'professional'
+  | 'hands-on'
+  | 'advocacy'
+  | 'learning'
+  | 'creative';
 
 export const ALL_TOPICS: ClimateTopic[] = [
-  'energy', 'transport', 'food', 'fossil-fuels',
-  'conservation', 'waste', 'policy', 'circular-economy',
+  'energy', 'transport', 'built-environment', 'food-land',
+  'nature', 'industry-materials', 'policy',
+  'community', 'professional', 'hands-on', 'advocacy',
+  'learning', 'creative',
 ];
 
 export type TopicAffinities = Record<ClimateTopic, number>;
 
 const ARCHETYPE_TOPICS: Record<ArchetypeKey, Partial<Record<ClimateTopic, number>>> = {
   circular_deal_hunter: {
-    'circular-economy': 0.8,
-    'waste': 0.6,
-    'conservation': 0.2,
+    'industry-materials': 0.8,
+    'hands-on': 0.5,
+    'community': 0.3,
   },
   purpose_seeker: {
-    'policy': 0.5,
-    'conservation': 0.5,
+    'policy': 0.4,
+    'nature': 0.5,
     'energy': 0.3,
-    'food': 0.3,
+    'food-land': 0.3,
+    'learning': 0.4,
   },
   digital_minimalist: {
     'energy': 0.7,
-    'waste': 0.4,
-    'circular-economy': 0.3,
+    'industry-materials': 0.4,
+    'learning': 0.3,
   },
   civic_advocate: {
-    'policy': 0.8,
+    'policy': 0.7,
+    'advocacy': 0.8,
     'energy': 0.5,
-    'fossil-fuels': 0.5,
-    'conservation': 0.3,
+    'nature': 0.3,
   },
   general_browser: {
     'energy': 0.2,
     'policy': 0.2,
-    'conservation': 0.2,
+    'nature': 0.2,
   },
 };
 
@@ -68,60 +81,62 @@ const DOMAIN_TOPICS: Record<string, ClimateTopic[]> = {
   'utilitydive.com': ['energy', 'policy'],
   'energymonitor.ai': ['energy'],
 
-  // Food & agriculture
-  'allrecipes.com': ['food'],
-  'foodnetwork.com': ['food'],
-  'seriouseats.com': ['food'],
-  'bonappetit.com': ['food'],
-  'cookinglight.com': ['food'],
-  'eatingwell.com': ['food'],
-  'epicurious.com': ['food'],
-  'budgetbytes.com': ['food'],
-  'minimalistbaker.com': ['food'],
-  'thekitchn.com': ['food'],
+  // Food & land
+  'allrecipes.com': ['food-land'],
+  'foodnetwork.com': ['food-land'],
+  'seriouseats.com': ['food-land'],
+  'bonappetit.com': ['food-land'],
+  'cookinglight.com': ['food-land'],
+  'eatingwell.com': ['food-land'],
+  'epicurious.com': ['food-land'],
+  'budgetbytes.com': ['food-land'],
+  'minimalistbaker.com': ['food-land'],
+  'thekitchn.com': ['food-land'],
 
-  // Conservation & nature
-  'nationalgeographic.com': ['conservation'],
-  'worldwildlife.org': ['conservation'],
-  'nature.org': ['conservation'],
-  'audubon.org': ['conservation'],
-  'sierraclub.org': ['conservation', 'policy'],
-  'nrdc.org': ['conservation', 'policy'],
+  // Nature & conservation
+  'nationalgeographic.com': ['nature', 'learning'],
+  'worldwildlife.org': ['nature'],
+  'nature.org': ['nature'],
+  'audubon.org': ['nature'],
+  'sierraclub.org': ['nature', 'advocacy'],
+  'nrdc.org': ['nature', 'policy'],
 
-  // Fossil fuels & divestment
-  'oilprice.com': ['fossil-fuels', 'energy'],
-  'rigzone.com': ['fossil-fuels'],
-  'gofossilfree.org': ['fossil-fuels', 'policy'],
+  // Energy transition & fossil fuel opposition (→ energy + advocacy)
+  'oilprice.com': ['energy'],
+  'rigzone.com': ['energy'],
+  'gofossilfree.org': ['advocacy', 'energy'],
 
   // Policy & governance
-  'epa.gov': ['policy', 'conservation'],
+  'epa.gov': ['policy', 'nature'],
   'energy.gov': ['policy', 'energy'],
-  'iea.org': ['policy', 'energy'],
+  'iea.org': ['policy', 'energy', 'learning'],
   'unfccc.int': ['policy'],
-  'ipcc.ch': ['policy'],
-  'climateactiontracker.org': ['policy'],
+  'ipcc.ch': ['policy', 'learning'],
+  'climateactiontracker.org': ['policy', 'learning'],
 
-  // Circular economy
-  'backmarket.com': ['circular-economy'],
-  'ebay.com': ['circular-economy'],
-  'swappa.com': ['circular-economy'],
-  'ifixit.com': ['circular-economy', 'waste'],
-  'freecycle.org': ['waste', 'circular-economy'],
-  'thredup.com': ['circular-economy', 'waste'],
-  'poshmark.com': ['circular-economy'],
+  // Industry & circular economy
+  'backmarket.com': ['industry-materials'],
+  'ebay.com': ['industry-materials'],
+  'swappa.com': ['industry-materials'],
+  'ifixit.com': ['industry-materials', 'hands-on'],
+  'freecycle.org': ['industry-materials', 'community'],
+  'thredup.com': ['industry-materials'],
+  'poshmark.com': ['industry-materials'],
 
   // Broad sustainability
-  'treehugger.com': ['conservation', 'energy', 'food'],
-  'grist.org': ['policy', 'energy', 'conservation'],
-  'ecowatch.com': ['conservation', 'energy', 'policy'],
+  'treehugger.com': ['nature', 'energy', 'food-land'],
+  'grist.org': ['policy', 'energy', 'nature'],
+  'ecowatch.com': ['nature', 'energy', 'policy'],
   'theguardian.com': ['policy'],
-  'yale.edu': ['policy', 'conservation'],
+  'yale.edu': ['policy', 'learning'],
 };
 
 function emptyAffinities(): TopicAffinities {
   return {
-    'energy': 0, 'transport': 0, 'food': 0, 'fossil-fuels': 0,
-    'conservation': 0, 'waste': 0, 'policy': 0, 'circular-economy': 0,
+    'energy': 0, 'transport': 0, 'built-environment': 0, 'food-land': 0,
+    'nature': 0, 'industry-materials': 0, 'policy': 0,
+    'community': 0, 'professional': 0, 'hands-on': 0, 'advocacy': 0,
+    'learning': 0, 'creative': 0,
   };
 }
 
@@ -177,7 +192,7 @@ export function computeTopicAffinities(
 
   // Layer 4: Food swap engagement signal
   if (foodSwapEngaged) {
-    affinities.food += 0.3;
+    affinities['food-land'] += 0.3;
   }
 
   // Normalize to 0-1 range

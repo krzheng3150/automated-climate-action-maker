@@ -11,7 +11,7 @@ export interface CivicAction {
   url: string;
   platform: string;
   region: string;
-  topics: ClimateTopic[];
+  topics: Partial<Record<ClimateTopic, number>>;
   type: 'petition' | 'comment' | 'campaign' | 'event';
   signatures?: number;
   deadline?: string;
@@ -68,9 +68,9 @@ export function matchCivicActions(
   const scored: RankedCivicAction[] = candidates.map((action) => {
     let score = 0;
 
-    // Topic overlap: sum the user's affinity for each matching topic
-    for (const topic of action.topics) {
-      score += affinities[topic] ?? 0;
+    // Topic overlap: sum user affinity × action weight for each topic
+    for (const [topic, weight] of Object.entries(action.topics) as [ClimateTopic, number][]) {
+      score += (affinities[topic] ?? 0) * weight;
     }
 
     // Urgency bonus: actions closing within 14 days get a boost

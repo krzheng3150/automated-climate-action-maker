@@ -117,9 +117,9 @@ const circularSnapshot = {
   },
 };
 const circAff = computeTopicAffinities(circularSnapshot);
-assert(circAff['circular-economy'] > 0.5, 'Circular archetype has high circular-economy affinity');
+assert(circAff['industry-materials'] > 0.5, 'Circular archetype has high industry-materials affinity');
 const circTop = topTopics(circAff, 3);
-assert(circTop.includes('circular-economy'), 'Circular-economy is a top topic');
+assert(circTop.includes('industry-materials'), 'Industry-materials is a top topic');
 
 // Null snapshot fallback
 const nullAff = computeTopicAffinities(null);
@@ -128,7 +128,7 @@ assert(nullAff.policy > 0, 'Null snapshot has policy baseline');
 
 // Food swap bonus
 const foodAff = computeTopicAffinities(circularSnapshot, true);
-assert(foodAff.food > circAff.food, 'Food swap engagement boosts food affinity');
+assert(foodAff['food-land'] > circAff['food-land'], 'Food swap engagement boosts food-land affinity');
 
 // All topics present
 for (const topic of ALL_TOPICS) {
@@ -141,14 +141,19 @@ for (const topic of ALL_TOPICS) {
 console.log('\n--- Action Ranking ---');
 
 const fakeActions = [
-  { id: 'a1', title: 'Energy Petition', url: 'https://example.com/1', platform: 'Test', region: 'GB', topics: ['energy'], type: 'petition', signatures: 5000, fetchedAt: Date.now() },
-  { id: 'a2', title: 'Policy Campaign', url: 'https://example.com/2', platform: 'Test', region: 'GB', topics: ['policy', 'fossil-fuels'], type: 'campaign', fetchedAt: Date.now() },
-  { id: 'a3', title: 'US Only', url: 'https://example.com/3', platform: 'Test', region: 'US', topics: ['energy'], type: 'petition', fetchedAt: Date.now() },
-  { id: 'a4', title: 'Global Action', url: 'https://example.com/4', platform: 'Test', region: 'global', topics: ['conservation'], type: 'campaign', fetchedAt: Date.now() },
-  { id: 'a5', title: 'Expired', url: 'https://example.com/5', platform: 'Test', region: 'GB', topics: ['policy'], type: 'petition', deadline: '2020-01-01', fetchedAt: Date.now() },
+  { id: 'a1', title: 'Energy Petition', url: 'https://example.com/1', platform: 'Test', region: 'GB', topics: { energy: 0.9 }, type: 'petition', signatures: 5000, fetchedAt: Date.now() },
+  { id: 'a2', title: 'Policy Campaign', url: 'https://example.com/2', platform: 'Test', region: 'GB', topics: { policy: 0.7, advocacy: 0.6, energy: 0.4 }, type: 'campaign', fetchedAt: Date.now() },
+  { id: 'a3', title: 'US Only', url: 'https://example.com/3', platform: 'Test', region: 'US', topics: { energy: 0.8 }, type: 'petition', fetchedAt: Date.now() },
+  { id: 'a4', title: 'Global Action', url: 'https://example.com/4', platform: 'Test', region: 'global', topics: { nature: 0.8 }, type: 'campaign', fetchedAt: Date.now() },
+  { id: 'a5', title: 'Expired', url: 'https://example.com/5', platform: 'Test', region: 'GB', topics: { policy: 0.7 }, type: 'petition', deadline: '2020-01-01', fetchedAt: Date.now() },
 ];
 
-const gbAffinities = { energy: 0.8, transport: 0.1, food: 0.0, 'fossil-fuels': 0.3, conservation: 0.2, waste: 0.0, policy: 0.6, 'circular-economy': 0.0 };
+const gbAffinities = {
+  energy: 0.8, transport: 0.1, 'built-environment': 0.0, 'food-land': 0.0,
+  nature: 0.2, 'industry-materials': 0.0, policy: 0.6,
+  community: 0.0, professional: 0.0, 'hands-on': 0.0, advocacy: 0.3,
+  learning: 0.0, creative: 0.0,
+};
 const ranked = matchCivicActions('GB', gbAffinities, fakeActions, 5);
 
 assert(ranked.length <= 5, `Ranked results capped at max`);
@@ -159,9 +164,14 @@ assert(ranked.every(a => typeof a.score === 'number'), 'All ranked actions have 
 assert(ranked[0].score >= ranked[ranked.length - 1].score, 'Actions sorted by score descending');
 
 // Topic relevance drives ranking
-const policyOnly = { energy: 0.0, transport: 0.0, food: 0.0, 'fossil-fuels': 0.0, conservation: 0.0, waste: 0.0, policy: 1.0, 'circular-economy': 0.0 };
+const policyOnly = {
+  energy: 0.0, transport: 0.0, 'built-environment': 0.0, 'food-land': 0.0,
+  nature: 0.0, 'industry-materials': 0.0, policy: 1.0,
+  community: 0.0, professional: 0.0, 'hands-on': 0.0, advocacy: 0.0,
+  learning: 0.0, creative: 0.0,
+};
 const policyRanked = matchCivicActions('GB', policyOnly, fakeActions, 2);
-assert(policyRanked[0].topics.includes('policy'), 'Policy-focused user gets policy action first');
+assert(policyRanked[0].topics.policy > 0, 'Policy-focused user gets policy action first');
 
 // Empty region
 const emptyRanked = matchCivicActions('XX', gbAffinities, fakeActions, 3);
@@ -198,7 +208,7 @@ for (const a of CIVIC_ACTIONS) {
 for (const a of CIVIC_ACTIONS) {
   assert(typeof a.title === 'string' && a.title.length > 0, `Action "${a.id}" has a title`);
   assert(typeof a.url === 'string' && a.url.startsWith('https://'), `Action "${a.id}" has a valid URL`);
-  assert(a.topics.length > 0, `Action "${a.id}" has at least one topic`);
+  assert(Object.keys(a.topics).length > 0, `Action "${a.id}" has at least one topic`);
   assert(['petition', 'comment', 'campaign', 'event'].includes(a.type), `Action "${a.id}" has a valid type`);
 }
 

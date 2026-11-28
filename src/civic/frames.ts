@@ -64,28 +64,28 @@ const BRIDGES: Record<ClimateTopic, FrameVariant[]> = {
     { text: 'for better transit options', tones: ['practical'] },
     { text: 'for cleaner roads near you', tones: ['social'] },
   ],
-  food: [
+  'built-environment': [
+    { text: 'for greener buildings near you', tones: ['social'] },
+    { text: 'to improve your living space', tones: ['practical'] },
+    { text: 'toward climate-ready communities', tones: ['emotional'] },
+  ],
+  'food-land': [
     { text: 'for healthier local food', tones: ['social'] },
     { text: 'to reduce food waste', tones: ['practical'] },
     { text: 'for sustainable food choices', tones: ['emotional'] },
     { text: 'toward a cleaner food system', tones: ['emotional'] },
   ],
-  'fossil-fuels': [
-    { text: 'against fossil fuel expansion', tones: ['emotional', 'action'] },
-    { text: 'to keep fossil fuels in the ground', tones: ['emotional'] },
-    { text: 'for a fossil-free future', tones: ['emotional'] },
-  ],
-  conservation: [
+  nature: [
     { text: 'protecting nearby nature', tones: ['emotional', 'social'] },
     { text: 'for local green space', tones: ['social'] },
     { text: 'to preserve wildlife habitat', tones: ['emotional'] },
     { text: 'safeguarding natural areas', tones: ['emotional'] },
   ],
-  waste: [
+  'industry-materials': [
+    { text: 'for a repair-and-reuse economy', tones: ['practical'] },
+    { text: 'to keep products in use longer', tones: ['practical'] },
     { text: 'to cut waste locally', tones: ['practical', 'social'] },
     { text: 'for less plastic pollution', tones: ['emotional'] },
-    { text: 'toward zero waste', tones: ['emotional', 'action'] },
-    { text: 'reducing landfill impact', tones: ['practical'] },
   ],
   policy: [
     { text: 'on climate policy that affects you', tones: ['practical'] },
@@ -93,10 +93,35 @@ const BRIDGES: Record<ClimateTopic, FrameVariant[]> = {
     { text: 'for stronger environmental standards', tones: ['emotional'] },
     { text: 'pushing for real policy change', tones: ['action'] },
   ],
-  'circular-economy': [
-    { text: 'for a repair-and-reuse economy', tones: ['practical'] },
-    { text: 'to keep products in use longer', tones: ['practical'] },
-    { text: 'for smarter consumption', tones: ['practical'] },
+  community: [
+    { text: 'with people who share your values', tones: ['social'] },
+    { text: 'in your local climate community', tones: ['social'] },
+    { text: 'with neighbors who care', tones: ['social', 'emotional'] },
+  ],
+  professional: [
+    { text: 'with climate leaders and innovators', tones: ['social'] },
+    { text: 'to build your climate network', tones: ['social', 'practical'] },
+    { text: 'with industry changemakers', tones: ['social', 'action'] },
+  ],
+  'hands-on': [
+    { text: 'by getting your hands dirty', tones: ['action', 'practical'] },
+    { text: 'by doing something tangible', tones: ['action'] },
+    { text: 'with direct, local impact', tones: ['action', 'social'] },
+  ],
+  advocacy: [
+    { text: 'against fossil fuel expansion', tones: ['emotional', 'action'] },
+    { text: 'by making your voice count', tones: ['action'] },
+    { text: 'by pushing for real change', tones: ['action', 'emotional'] },
+  ],
+  learning: [
+    { text: 'to deepen your understanding', tones: ['practical'] },
+    { text: 'with the latest climate insights', tones: ['practical'] },
+    { text: 'from experts in the field', tones: ['social', 'practical'] },
+  ],
+  creative: [
+    { text: 'through art and storytelling', tones: ['emotional'] },
+    { text: 'through culture and creativity', tones: ['emotional', 'social'] },
+    { text: 'by reimagining what\'s possible', tones: ['emotional'] },
   ],
 };
 
@@ -222,7 +247,13 @@ function hashCode(s: string): number {
 
 export function pickFrame(action: CivicAction, ctx: FrameContext): ActionFrame {
   const salt = hashCode(action.id);
-  const topic = action.topics[0] ?? 'policy';
+
+  // Pick highest-weighted topic for bridge phrasing
+  let topic: ClimateTopic = 'policy';
+  let topWeight = 0;
+  for (const [t, w] of Object.entries(action.topics) as [ClimateTopic, number][]) {
+    if (w > topWeight) { topWeight = w; topic = t; }
+  }
 
   const hookPool = HOOKS[ctx.motivator] ?? HOOKS.identity;
   const bridgePool = BRIDGES[topic] ?? BRIDGES.policy;

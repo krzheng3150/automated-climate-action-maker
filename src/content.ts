@@ -808,19 +808,21 @@ class ACAMContentScript {
       chrome.runtime.sendMessage(
         { type: 'CHECK_AVAILABILITY', payload: { group, query: productTitle } },
         (resp) => {
-          if (!resp?.availability) return;
-          const avail: Record<string, boolean> = resp.availability;
+          const avail: Record<string, boolean> = resp?.availability ?? {};
           let anyVisible = false;
           for (const [id, btn] of Object.entries(btnMap)) {
-            if (avail[id] === false && !btn.classList.contains('clicked')) {
-              btn.style.display = 'none';
-            } else {
+            if (avail[id] === true) {
               anyVisible = true;
+            } else {
+              btn.style.display = 'none';
             }
           }
           if (!anyVisible) {
-            snippetEl.textContent = `No refurbished listings found for "${productTitle}"`;
+            card.remove();
+            return;
           }
+          snippetEl.textContent = `Target: ${productTitle} (${catConfig?.co2Note ?? 'Save up to ~65 kg CO₂e'})`;
+          card.style.display = '';
         },
       );
 
@@ -844,6 +846,10 @@ class ACAMContentScript {
       }
       this.removePrompt();
     });
+
+    if (scenario !== 'scenario-a') {
+      card.style.display = 'none';
+    }
 
     this.shadowRoot.appendChild(style);
     this.shadowRoot.appendChild(card);

@@ -16,7 +16,7 @@ type AvailabilityCache = Record<string, CacheEntry>;
 const NO_RESULTS_SIGNALS: Record<string, string[]> = {
   backmarket: ['0 result', 'no result', '"totalCount":0'],
   'ebay-refurbished': ['No exact matches found', '0 results for'],
-  swappa: ['No listings found', 'no results', '0 results'],
+  swappa: ['No listings found', 'no results', '0 results', 'No products match'],
   thredup: ['0 Results', 'No results found', 'we couldn\'t find'],
   poshmark: ['No results found', '0 Listings'],
   depop: ['0 results', 'No results found'],
