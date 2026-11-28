@@ -12,6 +12,7 @@ import {
   type DigitalFootprintSnapshot,
   type DomainFrequency,
   type ExtensionMessage,
+  type FeedbackMeta,
   type HelloStats,
   type HistoryScanResult,
   type IngestionMode,
@@ -616,6 +617,7 @@ interface RecordFeedbackPayload {
   recTitle: string;
   vote: 'up' | 'down';
   comment: string;
+  meta?: FeedbackMeta;
 }
 
 async function recordFeedback(payload: RecordFeedbackPayload): Promise<ACAMStats> {
@@ -630,6 +632,7 @@ async function recordFeedback(payload: RecordFeedbackPayload): Promise<ACAMStats
     vote: payload.vote,
     comment: payload.comment,
     timestamp: Date.now(),
+    ...(payload.meta ? { meta: payload.meta } : {}),
   };
 
   const updated = appendFeedbackEntry(existing, entry);

@@ -27,6 +27,8 @@ export interface RecipeSuggestionView {
   dishReductionPercent: number | null;
   /** kg CO2e saved by the changed foods if the recipe is made as suggested. */
   co2eSavedKg: number;
+  replaceFraction: number;
+  dishDetected: string | null;
   evidenceCount: number;
   evidence: EvidenceSource[];
   caveat: string | null;
@@ -82,6 +84,8 @@ export function suggestForRecipe(input: unknown): RecipeSuggestionView | null {
     lineReductionPercent: best.lineReductionPercent,
     dishReductionPercent: best.dish.reductionPercent,
     co2eSavedKg: Math.round((best.lineKgCo2eBefore - best.lineKgCo2eAfter) * 100) / 100,
+    replaceFraction: best.replaceFraction,
+    dishDetected: best.dishDetected,
     evidenceCount: best.evidence.length,
     evidence: best.evidence.map((e) => ({ source: e.source, url: e.url })),
     caveat: best.caveats[0] ?? null,

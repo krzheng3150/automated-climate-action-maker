@@ -37,6 +37,7 @@ export interface SwapSuggestion {
     perServingBefore: number | null;
     perServingAfter: number | null;
   };
+  dishDetected: string | null;
   evidence: SwapRule['evidence'];
   tips: string[];
   caveats: string[];
@@ -45,8 +46,10 @@ export interface SwapSuggestion {
 const roundTo5 = (percent: number): number => Math.max(5, Math.round(percent / 5) * 5);
 
 function suggestFor(rule: SwapRule, analysis: RecipeAnalysis): SwapSuggestion | null {
-  if (!new RegExp(rule.dishPattern).test(analysis.context)) return null;
+  const dishMatch = analysis.context.match(new RegExp(rule.dishPattern));
+  if (!dishMatch) return null;
   if (rule.excludePattern && new RegExp(rule.excludePattern).test(analysis.context)) return null;
+  const dishDetected = dishMatch[0].toLowerCase();
 
   const fromLines = analysis.lines.filter((l) => l.foodId !== null && rule.from.includes(l.foodId));
   // A line we could not weigh makes the total unreliable, so stay quiet.
@@ -105,6 +108,7 @@ function suggestFor(rule: SwapRule, analysis: RecipeAnalysis): SwapSuggestion | 
     lineKgCo2eAfter: after,
     lineReductionPercent,
     dish: { reductionPercent: dishReduction, perServingBefore, perServingAfter },
+    dishDetected,
     evidence: rule.evidence,
     tips: [...rule.tips],
     caveats,

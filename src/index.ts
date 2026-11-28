@@ -718,12 +718,24 @@ export function computeRecommendations(
 // 11. Recommendation Feedback
 // ============================================================================
 
+export interface FeedbackMeta {
+  type: 'civic' | 'circular' | 'food_swap';
+  category?: string;
+  ruleId?: string;
+  dishDetected?: string;
+  evidenceCount?: number;
+  replaceFraction?: number;
+  co2eSavedKg?: number;
+  cardVisibleMs?: number;
+}
+
 export interface RecommendationFeedback {
   recId: string;
   recTitle: string;
   vote: 'up' | 'down';
   comment: string;
   timestamp: number;
+  meta?: FeedbackMeta;
 }
 
 export const MAX_FEEDBACK_ENTRIES = 200;
@@ -740,12 +752,14 @@ export function appendFeedbackEntry(
 }
 
 export function formatFeedbackTSV(entries: RecommendationFeedback[]): string {
-  const header = 'Date\tRecommendation\tVote\tComment';
+  const header = 'Date\tRecommendation\tVote\tComment\tType\tCategory\tRule\tDish\tEvidence\tReplacePct\tCO2eSaved\tVisibleSec';
   const rows = entries.map((e) => {
     const date = new Date(e.timestamp).toISOString().slice(0, 10);
     const vote = e.vote === 'up' ? 'Yes' : 'No';
     const comment = e.comment.replace(/\t/g, ' ').replace(/\n/g, ' ');
-    return `${date}\t${e.recTitle}\t${vote}\t${comment}`;
+    const m = e.meta;
+    const col = (v: string | number | undefined | null) => v != null ? String(v) : '';
+    return `${date}\t${e.recTitle}\t${vote}\t${comment}\t${col(m?.type)}\t${col(m?.category)}\t${col(m?.ruleId)}\t${col(m?.dishDetected)}\t${col(m?.evidenceCount)}\t${col(m?.replaceFraction != null ? Math.round(m.replaceFraction * 100) : undefined)}\t${col(m?.co2eSavedKg)}\t${col(m?.cardVisibleMs != null ? Math.round(m.cardVisibleMs / 1000) : undefined)}`;
   });
   return [header, ...rows].join('\n');
 }

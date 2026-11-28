@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
 
-import { FEEDBACK_APPS_SCRIPT_URL, formatFeedbackTSV, recordDiagnostic, resolveNudgeCooldown, STORAGE_KEYS, type ExtensionMessage } from './index';
+import { FEEDBACK_APPS_SCRIPT_URL, formatFeedbackTSV, recordDiagnostic, resolveNudgeCooldown, STORAGE_KEYS, type ExtensionMessage, type FeedbackMeta } from './index';
 import { buildSearchUrl, openOutbound, partnersInGroup, type OutboundPartner } from './outbound';
 import { detectRecipe } from './recipe-detect';
 import { REWARDS } from './rewards';
@@ -158,6 +158,7 @@ class ACAMContentScript {
   private shadowRoot: ShadowRoot | null = null;
   private scenario: ScenarioType | null = null;
   private scenarioForced = false;
+  private cardShownAt = 0;
   private triggered = false;
 
   constructor() {
@@ -848,7 +849,10 @@ class ACAMContentScript {
 
     const recId = scenario === 'scenario-a' ? 'civic_action' : `circular_${category ?? 'unknown'}`;
     const recTitle = scenario === 'scenario-a' ? 'Civic Action' : `${category ?? 'Shopping'} Nudge`;
-    card.appendChild(this.buildFeedbackSection(recId, recTitle));
+    const feedbackMeta: FeedbackMeta = scenario === 'scenario-a'
+      ? { type: 'civic' }
+      : { type: 'circular', category: category ?? 'unknown' };
+    card.appendChild(this.buildFeedbackSection(recId, recTitle, feedbackMeta));
 
     closeBtn.addEventListener('click', () => {
       if (category) {
@@ -870,6 +874,7 @@ class ACAMContentScript {
     this.shadowRoot.appendChild(style);
     this.shadowRoot.appendChild(card);
     document.body.appendChild(this.container);
+    this.cardShownAt = Date.now();
   }
 
   /** Looks for a recipe once the page has had time to render, and asks the background for a swap. */
@@ -1007,6 +1012,7 @@ class ACAMContentScript {
     closeBtn.addEventListener('click', () => this.removePrompt());
     this.shadowRoot.append(style, card);
     document.body.appendChild(this.container);
+    this.cardShownAt = Date.now();
   }
 
   private acceptFoodSwap(view: RecipeSuggestionView, card: HTMLElement): void {
@@ -1059,6 +1065,16 @@ class ACAMContentScript {
     submitBtn.addEventListener('click', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
+      const comment = input.value.trim();
+      const meta: FeedbackMeta = {
+        type: 'food_swap',
+        ruleId: view.ruleId,
+        dishDetected: view.dishDetected ?? undefined,
+        evidenceCount: view.evidenceCount,
+        replaceFraction: view.replaceFraction,
+        co2eSavedKg: view.co2eSavedKg,
+        cardVisibleMs: this.cardShownAt ? Date.now() - this.cardShownAt : undefined,
+      };
       chrome.runtime.sendMessage(
         {
           type: 'RECORD_FEEDBACK',
@@ -1066,7 +1082,8 @@ class ACAMContentScript {
             recId: `food_swap_${view.ruleId}`,
             recTitle: view.title,
             vote: 'down' as const,
-            comment: input.value.trim(),
+            comment,
+            meta,
           },
         },
         () => {
@@ -1075,8 +1092,9 @@ class ACAMContentScript {
               recId: `food_swap_${view.ruleId}`,
               recTitle: view.title,
               vote: 'down' as const,
-              comment: input.value.trim(),
+              comment,
               timestamp: Date.now(),
+              meta,
             };
             const tsv = formatFeedbackTSV([entry]);
             const encoded = encodeURIComponent(tsv.slice(0, 1800));
@@ -1128,7 +1146,7 @@ class ACAMContentScript {
     actionContainer.replaceChildren(successBox);
   }
 
-  private buildFeedbackSection(recId: string, recTitle: string): HTMLElement {
+  private buildFeedbackSection(recId: string, recTitle: string, meta?: FeedbackMeta): HTMLElement {
     const feedback = document.createElement('div');
     feedback.className = 'feedback-section';
 
@@ -1175,14 +1193,17 @@ class ACAMContentScript {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
       const comment = commentInput.value.trim();
+      const fullMeta: FeedbackMeta | undefined = meta
+        ? { ...meta, cardVisibleMs: this.cardShownAt ? Date.now() - this.cardShownAt : undefined }
+        : undefined;
       chrome.runtime.sendMessage(
         {
           type: 'RECORD_FEEDBACK',
-          payload: { recId, recTitle, vote: selectedVote, comment },
+          payload: { recId, recTitle, vote: selectedVote, comment, meta: fullMeta },
         },
         () => {
           if (FEEDBACK_APPS_SCRIPT_URL) {
-            const entry = { recId, recTitle, vote: selectedVote!, comment, timestamp: Date.now() };
+            const entry = { recId, recTitle, vote: selectedVote!, comment, timestamp: Date.now(), meta: fullMeta };
             const tsv = formatFeedbackTSV([entry]);
             const encoded = encodeURIComponent(tsv.slice(0, 1800));
             openOutbound(`${FEEDBACK_APPS_SCRIPT_URL}?feedback=${encoded}`, { source: 'content', placement: 'share-feedback' });
