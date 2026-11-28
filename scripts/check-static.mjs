@@ -175,6 +175,7 @@ for (const filePath of tsFiles) {
   // Generated data files (civic/data.ts, civic/recommend.ts) contain URL constants
   // but never open them — the content script opens them via openOutbound().
   const isOutboundExempt = relPath.endsWith('outbound.ts')
+    || relPath.endsWith('index.ts')
     || relPath === path.join('src', 'civic', 'data.ts')
     || relPath === path.join('src', 'civic', 'recommend.ts')
     || relPath === path.join('src', 'food', 'swaps-data.ts');

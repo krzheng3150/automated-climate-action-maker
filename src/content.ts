@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
 
-import { recordDiagnostic, resolveNudgeCooldown, STORAGE_KEYS, type ExtensionMessage } from './index';
+import { FEEDBACK_APPS_SCRIPT_URL, formatFeedbackTSV, recordDiagnostic, resolveNudgeCooldown, STORAGE_KEYS, type ExtensionMessage } from './index';
 import { buildSearchUrl, openOutbound, partnersInGroup, type OutboundPartner } from './outbound';
 import { detectRecipe } from './recipe-detect';
 import { REWARDS } from './rewards';
@@ -1070,6 +1070,18 @@ class ACAMContentScript {
           },
         },
         () => {
+          if (FEEDBACK_APPS_SCRIPT_URL) {
+            const entry = {
+              recId: `food_swap_${view.ruleId}`,
+              recTitle: view.title,
+              vote: 'down' as const,
+              comment: input.value.trim(),
+              timestamp: Date.now(),
+            };
+            const tsv = formatFeedbackTSV([entry]);
+            const encoded = encodeURIComponent(tsv.slice(0, 1800));
+            openOutbound(`${FEEDBACK_APPS_SCRIPT_URL}?feedback=${encoded}`, { source: 'content', placement: 'share-feedback' });
+          }
           container.replaceChildren();
           const thanks = document.createElement('div');
           thanks.className = 'success-title';

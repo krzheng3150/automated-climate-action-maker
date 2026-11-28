@@ -728,7 +728,7 @@ export interface RecommendationFeedback {
 
 export const MAX_FEEDBACK_ENTRIES = 200;
 
-export const FEEDBACK_APPS_SCRIPT_URL = '';
+export const FEEDBACK_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_DzQTNIZuKfrVXBzcea4U87_f81lXCaaYD9Ww73vSt3hOi9dS0ZeThDtZssJRP5_Lfw/exec';
 
 export function appendFeedbackEntry(
   existing: RecommendationFeedback[],
