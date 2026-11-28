@@ -30,38 +30,7 @@
         <button id="grant-btn" class="primary-btn btn-grant">Grant Local Access</button>
       </section>
 
-      <section class="card action-card" id="action-card">
-        <button id="scan-btn" class="primary-btn">
-          <span id="btn-text">Run On-Device Analysis</span>
-        </button>
-
-        <div class="stream-panel">
-          <div class="progress-bar-container">
-            <div id="progress-fill" class="progress-fill"></div>
-          </div>
-
-          <div class="step-status">
-            <div class="step-header">
-              <span id="pulse-dot" class="pulse-dot"></span>
-              <span id="step-title" class="step-title">Engine Ready</span>
-            </div>
-            <p id="step-detail" class="step-detail">Click to trigger on-device history classification across local SQLite records.</p>
-          </div>
-        </div>
-      </section>
-
       <section class="card settings-card" id="settings-card">
-        <div class="toggle-container">
-          <div class="toggle-text">
-            <span class="toggle-title">Background Auto-Scan</span>
-            <span class="toggle-desc">Activity-driven on-device footprint updates</span>
-          </div>
-          <label class="switch" for="auto-scan-toggle">
-            <input type="checkbox" id="auto-scan-toggle" checked />
-            <span class="slider round"></span>
-          </label>
-        </div>
-
         <div class="nudge-settings" id="nudge-settings">
           <div class="nudge-settings-header">
             <span class="toggle-title">Nudge Frequency</span>
@@ -72,31 +41,15 @@
         </div>
       </section>
 
-      <section class="card metrics-card">
-        <h3 class="section-title">Browsing Footprint</h3>
-        <div class="stats-grid">
-          <div class="stat-box google-box">
-            <span class="stat-label">Google Hits</span>
-            <span id="google-count" class="stat-value">0</span>
-          </div>
-          <div class="stat-box non-google-box">
-            <span class="stat-label">Non-Google</span>
-            <span id="non-google-count" class="stat-value">0</span>
-          </div>
-          <div class="stat-box total-box">
-            <span class="stat-label">Total Evaluated</span>
-            <span id="total-count" class="stat-value">0</span>
-          </div>
+      <section class="card feedback-card" id="feedback-section">
+        <div class="feedback-header">
+          <h3 class="section-title">Recommendation Feedback</h3>
+          <span id="feedback-count" class="diagnostics-badge">0 votes</span>
         </div>
-      </section>
-
-      <section class="card raw-data-card" id="raw-data-section">
-        <div class="raw-data-header">
-          <h3 class="section-title">What ACAM Sees (Raw Sample)</h3>
-          <span id="last-updated" class="timestamp-label">Not scanned yet</span>
-        </div>
-        <div id="domains-list" class="domains-list">
-          <div class="empty-state">Run analysis to inspect on-device domain frequency.</div>
+        <p class="feedback-section-desc">Rate recommendations to earn points and help improve suggestions.</p>
+        <div class="feedback-toolbar">
+          <button id="copy-feedback-btn" class="diag-btn diag-btn-copy" type="button">Copy Feedback</button>
+          <button id="share-feedback-btn" class="diag-btn diag-btn-share" type="button">Share Feedback</button>
         </div>
       </section>
 
@@ -116,15 +69,23 @@
         </div>
       </details>
 
-      <section class="card feedback-card" id="feedback-section">
-        <div class="feedback-header">
-          <h3 class="section-title">Recommendation Feedback</h3>
-          <span id="feedback-count" class="diagnostics-badge">0 votes</span>
-        </div>
-        <p class="feedback-section-desc">Rate recommendations to earn points and help improve suggestions.</p>
-        <div class="feedback-toolbar">
-          <button id="copy-feedback-btn" class="diag-btn diag-btn-copy" type="button">Copy Feedback</button>
-          <button id="share-feedback-btn" class="diag-btn diag-btn-share" type="button">Share Feedback</button>
+      <section class="card action-card" id="action-card">
+        <button id="scan-btn" class="primary-btn">
+          <span id="btn-text">Run On-Device Analysis</span>
+        </button>
+
+        <div class="stream-panel">
+          <div class="progress-bar-container">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+
+          <div class="step-status">
+            <div class="step-header">
+              <span id="pulse-dot" class="pulse-dot"></span>
+              <span id="step-title" class="step-title">Engine Ready</span>
+            </div>
+            <p id="step-detail" class="step-detail">Click to trigger on-device history classification across local SQLite records.</p>
+          </div>
         </div>
       </section>
 

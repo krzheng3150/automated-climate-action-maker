@@ -22,14 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const stepTitle = document.getElementById('step-title') as HTMLElement | null;
   const stepDetail = document.getElementById('step-detail') as HTMLElement | null;
 
-  const googleCountEl = document.getElementById('google-count') as HTMLElement | null;
-  const nonGoogleCountEl = document.getElementById('non-google-count') as HTMLElement | null;
-  const totalCountEl = document.getElementById('total-count') as HTMLElement | null;
-
-  const domainsListEl = document.getElementById('domains-list') as HTMLElement | null;
-  const lastUpdatedEl = document.getElementById('last-updated') as HTMLElement | null;
   const purgeBtn = document.getElementById('purge-btn') as HTMLButtonElement | null;
-  const autoScanToggle = document.getElementById('auto-scan-toggle') as HTMLInputElement | null;
 
   const diagnosticsListEl = document.getElementById('diagnostics-list') as HTMLElement | null;
   const diagnosticsCountEl = document.getElementById('diagnostics-count') as HTMLElement | null;
@@ -201,20 +194,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  async function loadAutoScanState(): Promise<void> {
-    if (!autoScanToggle) return;
-    const data = await chrome.storage.local.get(STORAGE_KEYS.AUTO_SCAN_ENABLED);
-    const isEnabled = data[STORAGE_KEYS.AUTO_SCAN_ENABLED] !== false;
-    autoScanToggle.checked = isEnabled;
-  }
-
-  autoScanToggle?.addEventListener('change', async () => {
-    if (!autoScanToggle) return;
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.AUTO_SCAN_ENABLED]: autoScanToggle.checked,
-    });
-  });
-
   const GLOBAL_FREQ_PRESETS = [
     { label: 'Always', hours: 0 },
     { label: '22h', hours: 22 },
@@ -272,55 +251,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     return hasPermission;
   }
 
-  function renderResults(result: HistoryScanResult): void {
-    if (googleCountEl) googleCountEl.textContent = result.googleCount.toLocaleString();
-    if (nonGoogleCountEl) nonGoogleCountEl.textContent = result.nonGoogleCount.toLocaleString();
-    if (totalCountEl) totalCountEl.textContent = result.total.toLocaleString();
-
-    if (lastUpdatedEl) {
-      const date = new Date(result.timestamp);
-      lastUpdatedEl.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-
-    if (domainsListEl) {
-      if (!result.topDomains || result.topDomains.length === 0) {
-        const emptyEl = document.createElement('div');
-        emptyEl.className = 'empty-state';
-        emptyEl.textContent = 'No history visits detected in specified period.';
-        domainsListEl.replaceChildren(emptyEl);
-        return;
-      }
-
-      const items = result.topDomains.map((item) => {
-        const row = document.createElement('div');
-        row.className = 'domain-item';
-
-        const name = document.createElement('span');
-        name.className = 'domain-name';
-        name.title = item.domain;
-        name.textContent = item.domain;
-
-        const count = document.createElement('span');
-        count.className = 'domain-count';
-        count.textContent = `${item.count} visits`;
-
-        row.appendChild(name);
-        row.appendChild(count);
-        return row;
-      });
-
-      domainsListEl.replaceChildren(...items);
-    }
-  }
-
   async function loadCachedScan(): Promise<void> {
-    const data = await chrome.storage.local.get([
-      STORAGE_KEYS.LAST_HISTORY_SCAN,
-      STORAGE_KEYS.FOOTPRINT_SNAPSHOT,
-    ]);
+    const data = await chrome.storage.local.get(STORAGE_KEYS.LAST_HISTORY_SCAN);
     const cached = data[STORAGE_KEYS.LAST_HISTORY_SCAN] as HistoryScanResult | undefined;
     if (cached) {
-      renderResults(cached);
       if (stepTitle) stepTitle.textContent = 'Last Scan Loaded';
       if (stepDetail) {
         stepDetail.textContent = `Retrieved on-device aggregate scan (${cached.total} items across past ${cached.timeframeDays} days).`;
@@ -356,10 +290,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (stepTitle) stepTitle.textContent = data.title;
       if (stepDetail) stepDetail.textContent = data.detail;
-
-      if (data.payload) {
-        renderResults(data.payload);
-      }
 
       if (data.done || data.error) {
         pulseDot?.classList.remove('active');
@@ -402,19 +332,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       STORAGE_KEYS.BROWSING_PROFILE,
     ]);
     renderDiagnostics([]);
-    if (googleCountEl) googleCountEl.textContent = '0';
-    if (nonGoogleCountEl) nonGoogleCountEl.textContent = '0';
-    if (totalCountEl) totalCountEl.textContent = '0';
     if (progressFill) progressFill.style.width = '0%';
     if (stepTitle) stepTitle.textContent = 'Cache Purged';
     if (stepDetail) stepDetail.textContent = 'Local scan metrics removed from browser storage.';
-    if (lastUpdatedEl) lastUpdatedEl.textContent = 'Cache cleared';
-    if (domainsListEl) {
-      const emptyEl = document.createElement('div');
-      emptyEl.className = 'empty-state';
-      emptyEl.textContent = 'Run analysis to inspect on-device domain frequency.';
-      domainsListEl.replaceChildren(emptyEl);
-    }
   });
 
   async function loadFeedbackCount(): Promise<void> {
@@ -487,7 +407,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await checkPermissions();
   await loadCachedScan();
-  await loadAutoScanState();
   await loadGlobalFrequency();
   await loadNudgeOverrides();
   await loadDiagnostics();
