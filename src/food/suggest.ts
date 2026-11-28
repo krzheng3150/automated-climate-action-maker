@@ -8,6 +8,11 @@ import { suggestSwaps } from './swaps';
  * the card shows is computed here, so the content script carries no food data.
  */
 
+export interface EvidenceSource {
+  source: string;
+  url: string;
+}
+
 export interface RecipeSuggestionView {
   ruleId: string;
   title: string;
@@ -23,6 +28,7 @@ export interface RecipeSuggestionView {
   /** kg CO2e saved by the changed foods if the recipe is made as suggested. */
   co2eSavedKg: number;
   evidenceCount: number;
+  evidence: EvidenceSource[];
   caveat: string | null;
   tips: string[];
 }
@@ -77,6 +83,7 @@ export function suggestForRecipe(input: unknown): RecipeSuggestionView | null {
     dishReductionPercent: best.dish.reductionPercent,
     co2eSavedKg: Math.round((best.lineKgCo2eBefore - best.lineKgCo2eAfter) * 100) / 100,
     evidenceCount: best.evidence.length,
+    evidence: best.evidence.map((e) => ({ source: e.source, url: e.url })),
     caveat: best.caveats[0] ?? null,
     tips: best.tips.slice(0, 2),
   };

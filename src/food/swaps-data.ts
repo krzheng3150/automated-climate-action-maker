@@ -4,6 +4,7 @@
 
 export interface SwapEvidence {
   source: string;
+  url: string;
   checked: string;
   /** Replacement share of the meat-plus-replacement mass in that recipe. */
   share: number;
@@ -46,16 +47,19 @@ export const SWAP_RULES: readonly SwapRule[] = [
     "evidence": [
       {
         "source": "Queensland Health, beef and lentil bolognese",
+        "url": "https://hw.qld.gov.au/healthy-recipes/beef-and-lentil-bolognese/",
         "checked": "2026-10-27",
         "share": 0.335
       },
       {
         "source": "Kitchen Confidante, beef and lentil chili",
+        "url": "https://kitchenconfidante.com/wprm_print/beef-and-lentil-chili",
         "checked": "2026-10-27",
         "share": 0.504
       },
       {
         "source": "Yankee Magazine, lentil and beef chili",
+        "url": "https://newengland.com/food/lentil-and-beef-chili/",
         "checked": "2026-10-27",
         "share": 0.545
       }

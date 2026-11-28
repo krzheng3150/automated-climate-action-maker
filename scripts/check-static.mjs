@@ -176,7 +176,8 @@ for (const filePath of tsFiles) {
   // but never open them — the content script opens them via openOutbound().
   const isOutboundExempt = relPath.endsWith('outbound.ts')
     || relPath === path.join('src', 'civic', 'data.ts')
-    || relPath === path.join('src', 'civic', 'recommend.ts');
+    || relPath === path.join('src', 'civic', 'recommend.ts')
+    || relPath === path.join('src', 'food', 'swaps-data.ts');
   if (!isOutboundExempt) {
     for (const item of forbiddenOutboundPatterns) {
       if (content.match(item.pattern)) {

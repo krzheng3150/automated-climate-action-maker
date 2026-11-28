@@ -79,8 +79,15 @@ const FOOD_STYLES = `
         font-size: 10px;
         color: #6b7280;
         line-height: 1.4;
-        margin: 0 0 12px 0;
+        margin: 0 0 4px 0;
       }
+      .evidence-sources { margin-bottom: 12px; }
+      .evidence-link {
+        color: #2563eb;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .evidence-link:hover { color: #1d4ed8; }
       .btn-quiet {
         background: transparent;
         color: #6b7280;
@@ -945,6 +952,7 @@ class ACAMContentScript {
       view.dishReductionPercent !== null
         ? `Whole recipe: about ${view.dishReductionPercent}% less CO₂e`
         : `Those ingredients: about ${view.lineReductionPercent}% less CO₂e`,
+      `Saves about ${view.co2eSavedKg} kg CO₂e`,
     ];
     for (const line of lines) {
       const item = document.createElement('li');
@@ -954,7 +962,24 @@ class ACAMContentScript {
 
     const fine = document.createElement('p');
     fine.className = 'fine-print';
-    fine.textContent = `${view.caveat ?? ''} Based on ${view.evidenceCount} published recipes. Estimates only.`.trim();
+    fine.textContent = `${view.caveat ?? ''} Estimates only.`.trim();
+
+    let sourceLine: HTMLParagraphElement | null = null;
+    if (view.evidence.length > 0) {
+      sourceLine = document.createElement('p');
+      sourceLine.className = 'fine-print evidence-sources';
+      sourceLine.appendChild(document.createTextNode('Based on: '));
+      view.evidence.forEach((e, i) => {
+        if (i > 0) sourceLine!.appendChild(document.createTextNode(', '));
+        const link = document.createElement('span');
+        link.className = 'evidence-link';
+        link.textContent = e.source;
+        link.addEventListener('click', () => {
+          openOutbound(e.url, { source: 'content', placement: 'evidence-link' });
+        });
+        sourceLine!.appendChild(link);
+      });
+    }
 
     const actionContainer = document.createElement('div');
     actionContainer.id = 'action-container';
@@ -970,10 +995,15 @@ class ACAMContentScript {
     skipBtn.id = 'swap-skip-btn';
     skipBtn.className = 'btn btn-quiet';
     skipBtn.textContent = 'Not for me';
-    skipBtn.addEventListener('click', () => this.removePrompt());
+    skipBtn.addEventListener('click', () => {
+      this.showRejectFeedback(view, actionContainer);
+    });
     actionContainer.append(acceptBtn, skipBtn);
 
-    card.append(header, titleEl, descEl, list, fine, actionContainer);
+    const cardChildren: Node[] = [header, titleEl, descEl, list, fine];
+    if (sourceLine) cardChildren.push(sourceLine);
+    cardChildren.push(actionContainer);
+    card.append(...cardChildren);
     closeBtn.addEventListener('click', () => this.removePrompt());
     this.shadowRoot.append(style, card);
     document.body.appendChild(this.container);
@@ -1005,6 +1035,59 @@ class ACAMContentScript {
         );
       }
     );
+  }
+
+  private showRejectFeedback(view: RecipeSuggestionView, container: HTMLElement): void {
+    container.replaceChildren();
+    container.className = 'reject-feedback';
+
+    const prompt = document.createElement('div');
+    prompt.className = 'feedback-label';
+    prompt.textContent = 'Why not? (optional, +10 pts)';
+
+    const input = document.createElement('textarea');
+    input.className = 'feedback-comment';
+    input.placeholder = 'e.g. I don’t like lentils, dietary restriction...';
+    input.rows = 2;
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'action-row';
+
+    const submitBtn = document.createElement('button');
+    submitBtn.className = 'btn btn-primary';
+    submitBtn.textContent = 'Share with developer (+10 pts)';
+    submitBtn.addEventListener('click', () => {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+      chrome.runtime.sendMessage(
+        {
+          type: 'RECORD_FEEDBACK',
+          payload: {
+            recId: `food_swap_${view.ruleId}`,
+            recTitle: view.title,
+            vote: 'down' as const,
+            comment: input.value.trim(),
+          },
+        },
+        () => {
+          container.replaceChildren();
+          const thanks = document.createElement('div');
+          thanks.className = 'success-title';
+          thanks.textContent = '✓ Thanks for the feedback! +10 pts';
+          container.appendChild(thanks);
+          setTimeout(() => this.removePrompt(), 1500);
+        }
+      );
+    });
+
+    const skipBtn = document.createElement('button');
+    skipBtn.className = 'btn btn-quiet';
+    skipBtn.textContent = 'Skip';
+    skipBtn.addEventListener('click', () => this.removePrompt());
+
+    btnRow.append(submitBtn, skipBtn);
+    container.append(prompt, input, btnRow);
+    input.focus();
   }
 
   private showSuccessMessage(

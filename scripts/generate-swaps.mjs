@@ -105,8 +105,7 @@ export function buildSwapRules({ data, foodIds }) {
       minFromGrams: rule.minFromGrams,
       replaceFraction,
       evidenceCount: rule.evidence.length,
-      // URLs stay in data/swaps.json: the extension never carries raw links (see the outbound helper).
-      evidence: rule.evidence.map((e) => ({ source: e.source, checked: e.checked, share: Math.round(evidenceShare(e) * 1000) / 1000 })),
+      evidence: rule.evidence.map((e) => ({ source: e.source, url: e.url, checked: e.checked, share: Math.round(evidenceShare(e) * 1000) / 1000 })),
       tips: rule.tips,
       caveats: rule.caveats,
       dishCaveats: rule.dishCaveats ?? [],
@@ -123,6 +122,7 @@ export function renderSwapsModule(rules) {
     '',
     'export interface SwapEvidence {',
     '  source: string;',
+    '  url: string;',
     '  checked: string;',
     '  /** Replacement share of the meat-plus-replacement mass in that recipe. */',
     '  share: number;',
