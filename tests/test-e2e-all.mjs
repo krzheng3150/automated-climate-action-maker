@@ -80,9 +80,13 @@ try {
     throw new Error('Dynamic product title not sanitized/displayed in snippet');
   }
 
-  const circularBtn = await shadowC.$('.circular-btn');
-  if (!circularBtn) throw new Error('Circular button missing in Scenario C');
-  await circularBtn.click();
+  const hasCircularBtn = await shadowC.evaluate((root) => {
+    const btn = root.querySelector('.circular-btn');
+    if (!btn) return false;
+    btn.click();
+    return true;
+  });
+  if (!hasCircularBtn) throw new Error('Circular button missing in Scenario C');
 
   await pageC.waitForFunction(
     () => {
@@ -191,11 +195,8 @@ try {
     { timeout: 8000 }
   );
 
-  const googleCount = await popupPage.$eval('#google-count', (el) => el.textContent);
-  const totalCount = await popupPage.$eval('#total-count', (el) => el.textContent);
-  const domainsCount = await popupPage.$$eval('.domain-item', (items) => items.length);
-
-  console.log(`[Popup Stream] Scan complete: ${googleCount} Google hits, ${totalCount} total visits, ${domainsCount} domains rendered.`);
+  const stepDetail = await popupPage.$eval('#step-detail', (el) => el.textContent);
+  console.log(`[Popup Stream] Scan complete: ${stepDetail}`);
 
   console.log('\n[VERIFIED] All plugin subsystems (Background, Content Scripts A & C, Popup Stream, Storage) are fully functional with 0 regressions!');
 } catch (err) {

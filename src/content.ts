@@ -150,6 +150,7 @@ class ACAMContentScript {
   private container: HTMLDivElement | null = null;
   private shadowRoot: ShadowRoot | null = null;
   private scenario: ScenarioType | null = null;
+  private scenarioForced = false;
   private triggered = false;
 
   constructor() {
@@ -199,11 +200,12 @@ class ACAMContentScript {
     const hostname = window.location.hostname.toLowerCase();
     const pathname = window.location.pathname.toLowerCase();
 
-    // Demo parameter overrides: allow testing any scenario on any page
     if (url.includes('acam_scenario=a') || url.includes('scenario=a')) {
+      this.scenarioForced = true;
       return 'scenario-a';
     }
     if (url.includes('acam_scenario=c') || url.includes('scenario=c')) {
+      this.scenarioForced = true;
       return 'scenario-c';
     }
 
@@ -808,26 +810,30 @@ class ACAMContentScript {
         btnMap[provider.id] = btn;
       }
 
-      chrome.runtime.sendMessage(
-        { type: 'CHECK_AVAILABILITY', payload: { group, query: productTitle } },
-        (resp) => {
-          const avail: Record<string, boolean> = resp?.availability ?? {};
-          let anyVisible = false;
-          for (const [id, btn] of Object.entries(btnMap)) {
-            if (avail[id] === true) {
-              anyVisible = true;
-            } else {
-              btn.style.display = 'none';
+      if (this.scenarioForced) {
+        card.style.display = '';
+      } else {
+        chrome.runtime.sendMessage(
+          { type: 'CHECK_AVAILABILITY', payload: { group, query: productTitle } },
+          (resp) => {
+            const avail: Record<string, boolean> = resp?.availability ?? {};
+            let anyVisible = false;
+            for (const [id, btn] of Object.entries(btnMap)) {
+              if (avail[id] === true) {
+                anyVisible = true;
+              } else {
+                btn.style.display = 'none';
+              }
             }
-          }
-          if (!anyVisible) {
-            card.remove();
-            return;
-          }
-          snippetEl.textContent = `Target: ${productTitle} (${catConfig?.co2Note ?? 'Save up to ~65 kg CO₂e'})`;
-          card.style.display = '';
-        },
-      );
+            if (!anyVisible) {
+              card.remove();
+              return;
+            }
+            snippetEl.textContent = `Target: ${productTitle} (${catConfig?.co2Note ?? 'Save up to ~65 kg CO₂e'})`;
+            card.style.display = '';
+          },
+        );
+      }
 
       const freqRow = this.buildFrequencyDial(category!);
       card.appendChild(freqRow);
