@@ -445,9 +445,12 @@ class ACAMContentScript {
     dial.className = 'frequency-dial';
 
     const loadActive = async () => {
-      const data = await chrome.storage.local.get(STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES);
+      const data = await chrome.storage.local.get([
+        STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES,
+        STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY,
+      ]);
       const overrides: NudgeCategoryOverrides = data[STORAGE_KEYS.NUDGE_CATEGORY_OVERRIDES] ?? {};
-      return overrides[category] ?? DEFAULT_COOLDOWN_HOURS;
+      return overrides[category] ?? data[STORAGE_KEYS.NUDGE_GLOBAL_FREQUENCY] ?? DEFAULT_COOLDOWN_HOURS;
     };
 
     for (const preset of FREQUENCY_PRESETS) {
